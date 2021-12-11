@@ -6,14 +6,6 @@ int main()
 {
     std::map<std::string, Segment> map;
     YAML::Node node = YAML::LoadFile("/home/zakhar/catkin_ws/src/rs_orientation/config/map.yaml")["lines"];
-    //for(const auto &line : node)
-    //{
-    //    std::string key = line.first.as<std::string>();
-    //    std::pair<float, float> start = line.second["start"].as<std::pair<float, float>>();
-    //    std::pair<float, float> end = line.second["end"].as<std::pair<float, float>>();
-    //    float angle = line.second["angle"].as<float>();
-    //    map[key] = Segment(start, end, angle);
-    //}
     for(YAML::const_iterator i = node.begin(); i != node.end(); ++i)
     {
         std::string key = i->first.as<std::string>();

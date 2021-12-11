@@ -14,15 +14,17 @@ std::string distanceTopic;
 std::string poseTopic;
 std::string mapConfig;
 
+std::pair<float, float> prevPose;
+
 ros::NodeHandle *n;
 ros::Subscriber sensorsSub;
 ros::Publisher posePub;
 
 YAML::Node node;
 
-void Callback(rs_orientation::DroneSensors msg)
+void Callback(rs_orientation::DroneSensorsConstPtr msg)
 {
-   // GetPosition();
+    std::pair<float, float> = GetPosition(map, )
 }
 
 int main(int argc, char **argv)
@@ -32,13 +34,17 @@ int main(int argc, char **argv)
     sensorsSub = n->subscribe<rs_orientation::DroneSensors>(angleTopic, 1, Callback);
     posePub = n->advertise<geometry_msgs::PoseStamped>(poseTopic, 1);
     n->getParam("map_config_file", mapConfig);
-    //node = YAML::LoadFile(mapConfig);
-    //std::string key;
-    //for(YAML::const_iterator i = node["lines"].begin(); i != node["lines"].end(); ++i)
-    //{
-    //    key = i->first.as<std::string>();
-    //    Segment wall(std::make_pair<float, float>(i->second["start"][0], i->second["start"][1]))
-    //}
+    n->
+    std::map<std::string, Segment> map;
+    node = YAML::LoadFile(mapConfig)["lines"];
+    for(YAML::const_iterator i = node.begin(); i != node.end(); ++i)
+    {
+        std::string key = i->first.as<std::string>();
+        std::pair<float, float> start = i->second["start"].as<std::pair<float, float>>();
+        std::pair<float, float> end = i->second["end"].as<std::pair<float, float>>();
+        float angle = i->second["angle"].as<float>();
+        map[key] = Segment(start, end, angle);
+    }
     delete n;
     return 0;
 }
