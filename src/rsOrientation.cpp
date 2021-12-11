@@ -1,4 +1,5 @@
 #include "rsOrientation.hpp"
+#include <numeric>
 #define NANF std::numeric_limits<float>::quiet_NaN()
 
 float GetRotationAngle(std::pair<float, float> curNormal, std::pair<float, float> goalNormal)
@@ -74,8 +75,7 @@ float GetPositionByWall(Segment wall, float distance, std::pair<float, float> ve
     float yc;
     if(n2 == 0.0f)
     {
-        yc = y2;
-        y0 = yc - distance * vec.second;
+        return NANF;
     }
     else
     {
@@ -117,9 +117,8 @@ std::pair<float, float> GetPosition(std::map<std::string, Segment> map, std::pai
                                     rs_orientation::DroneSensorsConstPtr scans)
 {
     int lineCount = map.size();
-    int i = 0;
-    std::vector<std::pair<float, float>> poses(lineCount);
-    for(auto lineDescript : map)
+    std::vector<std::pair<float, float>> poses;
+    for(auto &lineDescript : map)
     {
         Segment line(lineDescript.second);
         float angle = scans->angle.data;
@@ -129,54 +128,53 @@ std::pair<float, float> GetPosition(std::map<std::string, Segment> map, std::pai
         std::pair<float, float> normal = line.GetNorm();
         float turn = GetRotationAngle(std::make_pair(1.0f, 0.0f), normal);
         Segment lineWithOffset = line.GetLineWithOffset(offset);
-        std::map<std::string, Segment> transformedMap = lineWithOffset.TransformedMap(map, turn);
-        float sumY;
-        float y;
-        
-        for(auto crossLineBack : transformedMap)
+        std::map<std::string, Segment> transformedMap = lineWithOffset.TransformedMap(map, -turn);
+        std::vector<std::vector<float>> positions(lineCount * (lineCount - 1) * (lineCount - 1));
+
+        int i = 0;
+        float yl, yb, yr;
+        for(auto &crossLineBack : transformedMap)
         {
             if(crossLineBack.first != lineDescript.first)
             {
-                y = GetPositionByWall(crossLineBack.second, scans->back.range,
-                                                           std::make_pair(c, s));
-                if(!std::isnan(y))
+                yb = GetPositionByWall(crossLineBack.second, scans->back.range,
+                                             std::make_pair(c, s));
+                if(!std::isnan(yb)) positions[i].push_back(yb);
+                for(auto &crossLineLeft : transformedMap)
                 {
-                    sumY = y;
-                    for(auto crossLineLeft : transformedMap)
+                    yl = GetPositionByWall(crossLineLeft.second, scans->left.range,
+                                                 std::make_pair(s, -c));
+                    if(!std::isnan(yl)) positions[i].push_back(yl);
+                    for(auto &crossLineRight : transformedMap)
                     {
-                        y = GetPositionByWall(crossLineLeft.second, scans->left.range, std::make_pair(s, -c));
-                        if(!std::isnan(y))
+                        if(crossLineRight.first != crossLineLeft.first)
                         {
-                            sumY += y;
-                            for(auto crossLineRight : transformedMap)
-                            {
-                                if(crossLineRight.first != crossLineLeft.first)
-                                {
-                                    y = GetPositionByWall(crossLineRight.second, scans->right.range, std::make_pair(-s, c));
-                                    if(!std::isnan(y))
-                                    {
-                                        sumY += y;
-                                        break;
-                                    }
-                                }
-                            }
-                            break;
+                            yr = GetPositionByWall(crossLineRight.second, scans->right.range,
+                                                         std::make_pair(-s, c));
+                            if(!std::isnan(yr)) positions[i].push_back(yr);
+                            i++;
                         }
                     }
-                    break;
                 }
             }
-            sumY = NANF;
         }
-        y = sumY / 3;
 
-
-        poses[i] = Transform(std::make_pair(0, y), -turn);
+        int size;
+        std::pair<float, float> turnedBackPose;
         std::pair<float, float> offsets = lineWithOffset.GetStart();
-        poses[i].first += offsets.first;
-        poses[i].second += offsets.second;
-        i++;
+        for(auto &pose : positions)
+        {
+            size = pose.size();
+            if(size > 0)
+            {
+                turnedBackPose = Transform(std::make_pair(0, std::accumulate(pose.begin(), pose.end(), 0) / size), turn);
+                turnedBackPose.first += offsets.first;
+                turnedBackPose.second += offsets.second;
+                poses.push_back(turnedBackPose);
+            }
+        }
     }
+
     return *(std::min_element(poses.begin(), poses.end(), [initPos](std::pair<float, float> a, std::pair<float, float> b)
     {
         float x1 = a.first;
