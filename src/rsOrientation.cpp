@@ -129,29 +129,29 @@ std::pair<float, float> GetPosition(std::map<std::string, Segment> map, std::pai
         float turn = GetRotationAngle(std::make_pair(1.0f, 0.0f), normal);
         Segment lineWithOffset = line.GetLineWithOffset(offset);
         std::map<std::string, Segment> transformedMap = lineWithOffset.TransformedMap(map, -turn);
-        std::vector<std::vector<float>> positions(lineCount * (lineCount - 1) * (lineCount - 1));
+        std::vector<float> positions;
 
         int i = 0;
-        float yl, yb, yr;
+        float y;
         for(auto &crossLineBack : transformedMap)
         {
             if(crossLineBack.first != lineDescript.first)
             {
-                yb = GetPositionByWall(crossLineBack.second, scans->back.range,
+                y = GetPositionByWall(crossLineBack.second, scans->back.range,
                                              std::make_pair(c, s));
-                if(!std::isnan(yb)) positions[i].push_back(yb);
+                if(!std::isnan(y)) positions.push_back(y);
                 for(auto &crossLineLeft : transformedMap)
                 {
-                    yl = GetPositionByWall(crossLineLeft.second, scans->left.range,
+                    y = GetPositionByWall(crossLineLeft.second, scans->left.range,
                                                  std::make_pair(s, -c));
-                    if(!std::isnan(yl)) positions[i].push_back(yl);
+                    if(!std::isnan(y)) positions.push_back(y);
                     for(auto &crossLineRight : transformedMap)
                     {
                         if(crossLineRight.first != crossLineLeft.first)
                         {
-                            yr = GetPositionByWall(crossLineRight.second, scans->right.range,
+                            y = GetPositionByWall(crossLineRight.second, scans->right.range,
                                                          std::make_pair(-s, c));
-                            if(!std::isnan(yr)) positions[i].push_back(yr);
+                            if(!std::isnan(y)) positions.push_back(y);
                             i++;
                         }
                     }
@@ -164,10 +164,9 @@ std::pair<float, float> GetPosition(std::map<std::string, Segment> map, std::pai
         std::pair<float, float> offsets = lineWithOffset.GetStart();
         for(auto &pose : positions)
         {
-            size = pose.size();
             if(size > 0)
             {
-                turnedBackPose = Transform(std::make_pair(0, std::accumulate(pose.begin(), pose.end(), 0) / size), turn);
+                turnedBackPose = Transform(std::make_pair(0, pose), turn);
                 turnedBackPose.first += offsets.first;
                 turnedBackPose.second += offsets.second;
                 poses.push_back(turnedBackPose);
