@@ -5,7 +5,7 @@
 #include <map>
 #include <cmath>
 #include <limits>
-#include <rs_orientation/DroneSensors.h>
+#include <plane_navigation/DroneSensors.h>
 class Segment
 {
     private:
@@ -31,5 +31,5 @@ float GetRotationAngle(std::pair<float, float> curNormal, std::pair<float, float
 std::pair<float, float> Transform(std::pair<float, float> pointInRelated, float angleInWorld);
 
 std::pair<float, float> GetPosition(std::map<std::string, Segment> map, std::pair<float, float> initPos,
-                                    rs_orientation::DroneSensorsConstPtr scans);
+                                    plane_navigation::DroneSensorsConstPtr scans);
 #endif

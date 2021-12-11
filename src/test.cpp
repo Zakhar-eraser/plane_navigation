@@ -1,11 +1,11 @@
-#include "rsOrientation.hpp"
+#include "plane_navigation.hpp"
 #include <yaml-cpp/yaml.h>
-#include "rs_orientation/DroneSensors.h"
+#include "plane_navigation/DroneSensors.h"
 
 int main()
 {
     std::map<std::string, Segment> map;
-    YAML::Node node = YAML::LoadFile("/home/zakhar/catkin_ws/src/rs_orientation/config/map.yaml")["lines"];
+    YAML::Node node = YAML::LoadFile("/home/{user_name}/catkin_ws/src/plane_navigation/config/map.yaml")["lines"];
     for(YAML::const_iterator i = node.begin(); i != node.end(); ++i)
     {
         std::string key = i->first.as<std::string>();
@@ -17,7 +17,7 @@ int main()
     std::string data;
     std::pair<float, float> initPos;
     float left, front, right, back, angle;
-    rs_orientation::DroneSensorsPtr msg(new rs_orientation::DroneSensors());
+    plane_navigation::DroneSensorsPtr msg(new plane_navigation::DroneSensors());
     do
     {
         std::cout << "Initial position:\n";
@@ -31,7 +31,7 @@ int main()
         msg->front.range = front;
         msg->back.range = back;
         msg->angle.data = angle;
-        initPos = GetPosition(map, initPos, (rs_orientation::DroneSensorsConstPtr)msg);
+        initPos = GetPosition(map, initPos, (plane_navigation::DroneSensorsConstPtr)msg);
         std::cout << "\nPosition: " << initPos.first << " " << initPos.second << std::endl;
         std::cout << "Continue? (yes/no)   ";
         std::cin >> data;

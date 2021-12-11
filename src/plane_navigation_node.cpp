@@ -1,11 +1,11 @@
 #include <ros/ros.h>
 #include "PointCloud2Access.hpp"
-#include "rsOrientation.hpp"
+#include "plane_navigation.hpp"
 #include <sensor_msgs/Range.h>
 #include <std_msgs/Float32.h>
 #include <yaml-cpp/yaml.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <rs_orientation/DroneSensors.h>
+#include <plane_navigation/DroneSensors.h>
 
 std::map<std::string, Segment> map;
 
@@ -22,19 +22,19 @@ ros::Publisher posePub;
 
 YAML::Node node;
 
-void Callback(rs_orientation::DroneSensorsConstPtr msg)
+void Callback(plane_navigation::DroneSensorsConstPtr msg)
 {
-    std::pair<float, float> = GetPosition(map, )
+    //std::pair<float, float> = GetPosition(map, )
 }
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "rs_orientation_node");
+    ros::init(argc, argv, "plane_navigation_node");
     n = new ros::NodeHandle();
-    sensorsSub = n->subscribe<rs_orientation::DroneSensors>(angleTopic, 1, Callback);
+    sensorsSub = n->subscribe<plane_navigation::DroneSensors>(angleTopic, 1, Callback);
     posePub = n->advertise<geometry_msgs::PoseStamped>(poseTopic, 1);
     n->getParam("map_config_file", mapConfig);
-    n->
+    //n->
     std::map<std::string, Segment> map;
     node = YAML::LoadFile(mapConfig)["lines"];
     for(YAML::const_iterator i = node.begin(); i != node.end(); ++i)

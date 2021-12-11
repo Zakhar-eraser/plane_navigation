@@ -1,15 +1,15 @@
 <launch>
-    <arg name="namespace" default="/rs_orientation"/>
+    <arg name="namespace" default="/plane_navigation"/>
     <arg name="sensors_ns" default=""/>
     <arg name="sensors_data_topic" default="/sensors_data"/>
     <arg name="initial_position" default="[0.0, 0.0]"/>
-    <arg name="map_config_file" default="$(find rs_orientation)/config/map.yaml"/>
+    <arg name="map_config_file" default="$(find plane_navigation)/config/map.yaml"/>
     <arg name="pose_topic" default="pose"/>
     <group ns="$(arg namespace)">
         <param name="initial_position" value="$(arg initial_position)"/>
         <param name="sensors_data_topic" value="$(arg sensors_data_topic)/$(arg sensors_data_topic)"/>
         <param name="pose_topic" value="$(arg namespace)"/>
         <param name="map_config_file" value="$(arg map_config_file)"/>
-        <node name="adaptive_thresholding_node" pkg="pointcloud_tests" type="adaptive_thresholding_node" output="screen"/>
+       
     </group>
 </launch>

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13)
-project(rs_orientation)
+project(plane_navigation)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -21,7 +21,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include/${PROJECT_NAME}
   CATKIN_DEPENDS message_runtime
-  LIBRARIES rs_orientation
+  LIBRARIES plane_navigation
 #  CATKIN_DEPENDS roscpp sensor_msgs
 #  DEPENDS system_lib
 )
@@ -36,7 +36,7 @@ add_library(pointcloud_access
   src/PointCloud2Access.cpp
 )
 
-add_library(navigation src/rsOrientation.cpp)
+add_library(navigation src/plane_navigation.cpp)
 add_dependencies(navigation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Add cmake target dependencies of the library
@@ -44,10 +44,12 @@ add_dependencies(navigation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTE
 ## either from message generation or dynamic reconfigure
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_executable(${PROJECT_NAME}_node src/rs_orientation_node.cpp)
+add_executable(${PROJECT_NAME}_node src/plane_navigation_node.cpp)
 
 target_link_libraries(${PROJECT_NAME}_node
   pointcloud_access
+  yaml-cpp
+  navigation
   ${catkin_LIBRARIES}
 )
 

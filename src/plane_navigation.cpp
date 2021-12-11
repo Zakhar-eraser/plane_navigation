@@ -1,4 +1,4 @@
-#include "rsOrientation.hpp"
+#include "plane_navigation.hpp"
 #include <numeric>
 #define NANF std::numeric_limits<float>::quiet_NaN()
 
@@ -114,7 +114,7 @@ std::map<std::string, Segment> Segment::TransformedMap(std::map<std::string, Seg
 }
 
 std::pair<float, float> GetPosition(std::map<std::string, Segment> map, std::pair<float, float> initPos,
-                                    rs_orientation::DroneSensorsConstPtr scans)
+                                    plane_navigation::DroneSensorsConstPtr scans)
 {
     int lineCount = map.size();
     std::vector<std::pair<float, float>> poses;
