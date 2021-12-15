@@ -6,7 +6,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
  # message_generation
 )
-#find_package (Threads REQUIRED)
+find_package (Threads REQUIRED)
 
 #add_message_files(
 #  FILES
@@ -36,7 +36,7 @@ include_directories(
 
 add_library(navigation src/plane_navigation.cpp)
 add_dependencies(navigation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-#target_link_libraries (navigation Threads::Threads)
+target_link_libraries (navigation Threads::Threads)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

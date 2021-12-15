@@ -1,7 +1,8 @@
 #include <ros/ros.h>
 #include <std_msgs/Float32.h>
 #include <sensor_msgs/Range.h>
-#include <plane_navigation/DroneSensors.h>
+#include <geometry_msgs/PointStamped.h>
+#include <plane_na>
 
 ros::NodeHandle *n;
 
@@ -17,33 +18,31 @@ bool angleUpdated = false;
 
 ros::Publisher dataPub;
 
-plane_navigation::DroneSensors data;
+SensorScans *scans;
 
 void RangeCallback(sensor_msgs::RangeConstPtr msg)
 {
-    data.header.stamp = ros::Time::now();
     if(msg->header.frame_id == "range_front")
     {
-        data.front = *msg;
+        scans->front = msg->range;
         frontUpdated = true;
     }else if(msg->header.frame_id == "range_left")
     {
-        data.left = *msg;
+        scans->left = msg->range;
         leftUpdated = true;
     }else if(msg->header.frame_id == "range_right")
     {
-        data.right = *msg;
+        scans->right = msg->range;
         rightUpdated = true;
     }else
     {
-        data.back = *msg;
+        scans->back = msg->range;
     }
 }
 
 void AngleCallback(std_msgs::Float32ConstPtr msg)
 {
-    data.header.stamp = ros::Time::now();
-    data.angle = *msg;
+    scans->angle = msg->data;
     angleUpdated = true;
 }
 
@@ -51,8 +50,11 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "data_grabber");
     n = new ros::NodeHandle();
+    scans = new SensorScans();
 
-    dataPub = n->advertise<plane_navigation::DroneSensors>("/sensors_data", 1);
+    geometry_msgs::PointStamped data;
+
+    dataPub = n->advertise<geometry_msgs::PointStamped>("estimated_pose", 1);
 
     frontSub = n->subscribe<sensor_msgs::Range>("/range_front", 1, RangeCallback);
     leftSub = n->subscribe<sensor_msgs::Range>("/range_left", 1, RangeCallback);
@@ -61,15 +63,19 @@ int main(int argc, char **argv)
 
     ros::Rate rate(30);
 
+
+
     while(ros::ok())
     {
         if(frontUpdated && leftUpdated && rightUpdated && angleUpdated)
         {
+            data.header.stamp = ros::Time::now();
             frontUpdated = leftUpdated = rightUpdated = angleUpdated = false;
             dataPub.publish(data);
         }
     }
     
+    delete scans;
     delete n;
     return 0;
 }
