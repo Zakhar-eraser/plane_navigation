@@ -1,6 +1,20 @@
 #include "plane_navigation.hpp"
 #include <numeric>
+#include <yaml-cpp/yaml.h>
+#include <algorithm>
+
+#define CONTROLLER_LOOP_RATE 30
+
 #define NANF std::numeric_limits<float>::quiet_NaN()
+
+Pose::Pose(){}
+
+Pose::Pose(float x, float y, float angle)
+{
+    this->x = x;
+    this->y = y;
+    this->angle = angle;
+}
 
 float GetRotationAngle(std::pair<float, float> curNormal, std::pair<float, float> goalNormal)
 {
@@ -88,100 +102,106 @@ float GetPositionByWall(Segment wall, float distance, std::pair<float, float> ve
     } return y0;
 }
 
-std::pair<float, float> Segment::GetNorm()
+void Navigator::TransformedMap(std::pair<float, float> start, float angle)
 {
-    return normal;
-}
-
-std::pair<float, float> Segment::GetStart()
-{
-    return start;
-}
-
-std::pair<float, float> Segment::GetEnd()
-{
-    return end;
-}
-
-std::map<std::string, Segment> Segment::TransformedMap(std::map<std::string, Segment> &map, float angle)
-{
-    std::map<std::string, Segment> newMap;
     for(auto line : map)
     {
-        newMap[line.first] = line.second.TransformLine(angle, start);
+        transformedMap[line.first] = line.second.TransformLine(angle, start);
     }
-    return newMap;
 }
 
-std::pair<float, float> GetPosition(std::map<std::string, Segment> map, std::pair<float, float> initPos,
-                                    plane_navigation::DroneSensorsConstPtr scans)
+Navigator::Navigator(std::string configPath, SensorScans *scans)
 {
-    int lineCount = map.size();
-    std::vector<std::pair<float, float>> poses;
-    for(auto &lineDescript : map)
+    sleepTime = 1.0f / CONTROLLER_LOOP_RATE;
+    this->scans = scans;
+
+    YAML::Node node = YAML::LoadFile(configPath)["lines"];
+    for(YAML::const_iterator i = node.begin(); i != node.end(); ++i)
     {
-        Segment line(lineDescript.second);
-        float angle = scans->angle.data;
-        float c = cos(angle);
-        float s = sin(angle);
-        float offset = scans->front.range * c;
-        std::pair<float, float> normal = line.GetNorm();
-        float turn = GetRotationAngle(std::make_pair(1.0f, 0.0f), normal);
-        Segment lineWithOffset = line.GetLineWithOffset(offset);
-        std::map<std::string, Segment> transformedMap = lineWithOffset.TransformedMap(map, -turn);
-        std::vector<float> positions;
+        std::string key = i->first.as<std::string>();
+        std::pair<float, float> start = i->second["start"].as<std::pair<float, float>>();
+        std::pair<float, float> end = i->second["end"].as<std::pair<float, float>>();
+        float angle = i->second["angle"].as<float>();
+        map[key] = Segment(start, end, angle);
+    }
+}
 
-        int i = 0;
-        float y;
-        for(auto &crossLineBack : transformedMap)
-        {
-            if(crossLineBack.first != lineDescript.first)
-            {
-                y = GetPositionByWall(crossLineBack.second, scans->back.range,
-                                             std::make_pair(c, s));
-                if(!std::isnan(y)) positions.push_back(y);
-                for(auto &crossLineLeft : transformedMap)
-                {
-                    y = GetPositionByWall(crossLineLeft.second, scans->left.range,
-                                                 std::make_pair(s, -c));
-                    if(!std::isnan(y)) positions.push_back(y);
-                    for(auto &crossLineRight : transformedMap)
-                    {
-                        if(crossLineRight.first != crossLineLeft.first)
-                        {
-                            y = GetPositionByWall(crossLineRight.second, scans->right.range,
-                                                         std::make_pair(-s, c));
-                            if(!std::isnan(y)) positions.push_back(y);
-                            i++;
-                        }
-                    }
-                }
-            }
-        }
+Navigator::~Navigator()
+{
+    threadStop = true;
+    //navigatorThread.join();
+}
 
-        int size;
-        std::pair<float, float> turnedBackPose;
-        std::pair<float, float> offsets = lineWithOffset.GetStart();
-        for(auto &pose : positions)
+void Navigator::StartNavigator()
+{
+    //navigatorThread = std::thread(&Navigator::ThreadLoop, this);
+}
+
+void Navigator::SetNavigatorState(bool stop)
+{
+    threadStop = stop;
+}
+
+void Navigator::ThreadLoop()
+{
+    while(!threadStop)
+    {
+        CalculatePose();
+    }
+}
+
+void Navigator::CalculationCycle(std::string passingId, float length, std::pair<float, float> transform)
+{
+    for(auto &crossLine : transformedMap)
+    {
+        if(crossLine.first != passingId)
         {
-            if(size > 0)
-            {
-                turnedBackPose = Transform(std::make_pair(0, pose), turn);
-                turnedBackPose.first += offsets.first;
-                turnedBackPose.second += offsets.second;
-                poses.push_back(turnedBackPose);
-            }
+            float y = GetPositionByWall(crossLine.second, length,
+                                         transform);
+            if(!std::isnan(y)) linkedPoses.push_back(y);
         }
     }
+}
 
-    return *(std::min_element(poses.begin(), poses.end(), [initPos](std::pair<float, float> a, std::pair<float, float> b)
+void Navigator::CalculatePose()
+{
+    poses.clear();
+    for(auto &lineDescript : map)
     {
-        float x1 = a.first;
-        float y1 = a.second;
-        float x2 = b.first;
-        float y2 = b.second;
-        float x = initPos.first;
-        float y = initPos.second;
-        return (x1 - x) * (x1 - x) + (y1 - y) * (y1 - y) < (x2 - x) * (x2 - x) + (y2 - y) * (y2 - y);
+        transformedMap.clear();
+        linkedPoses.clear();
+        Segment line(lineDescript.second);
+        float angle = scans->angle;
+        float c = cos(angle);
+        float s = sin(angle);
+        float offset = scans->front * c;
+        std::pair<float, float> normal = line.normal;
+        float turn = GetRotationAngle(std::make_pair(1.0f, 0.0f), normal);
+        Segment lineWithOffset = line.GetLineWithOffset(offset);
+        TransformedMap(lineWithOffset.start, -turn);
+
+        CalculationCycle(lineDescript.first, scans->back, std::make_pair(c, s));
+        CalculationCycle("", scans->left, std::make_pair(s, -c));
+        CalculationCycle("", scans->right, std::make_pair(-s, c));
+
+        std::pair<float, float> turnedBackPosition;
+        Pose turnedBackPose;
+        std::pair<float, float> offsets = lineWithOffset.start;
+        for(float &pose : linkedPoses)
+        {
+            turnedBackPosition = Transform(std::make_pair(0, pose), turn);
+            turnedBackPose.x = turnedBackPosition.first + offsets.first;
+            turnedBackPose.y = turnedBackPosition.second + offsets.second;
+            turnedBackPose.angle = angle + atan2(normal.second, normal.first);
+            poses.push_back(turnedBackPose);
+        }
+    }
+}
+
+Pose Navigator::GetMinDiversePosition(Pose initPos)
+{
+    return *(std::min_element(poses.begin(), poses.end(), [&initPos](Pose a, Pose b)
+    {
+        return (a.x - initPos.x) * (a.x - initPos.x) + (a.y - initPos.y) * (a.y - initPos.y) < (b.x - initPos.x) * (b.x - initPos.x) + (b.y - initPos.y) * (b.y - initPos.y);
     }));
 }

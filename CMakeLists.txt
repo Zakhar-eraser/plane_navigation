@@ -4,19 +4,20 @@ project(plane_navigation)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
-  message_generation
+ # message_generation
 )
+#find_package (Threads REQUIRED)
 
-add_message_files(
-  FILES
-  DroneSensors.msg
-)
+#add_message_files(
+#  FILES
+#  DroneSensors.msg
+#)
 
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-  sensor_msgs
-)
+#generate_messages(
+#  DEPENDENCIES
+#  std_msgs
+#  sensor_msgs
+#)
 
 catkin_package(
   INCLUDE_DIRS include/${PROJECT_NAME}
@@ -32,26 +33,23 @@ include_directories(
 )
 
 ## Declare a C++ library
-add_library(pointcloud_access
-  src/PointCloud2Access.cpp
-)
 
 add_library(navigation src/plane_navigation.cpp)
 add_dependencies(navigation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#target_link_libraries (navigation Threads::Threads)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_executable(${PROJECT_NAME}_node src/plane_navigation_node.cpp)
-
-target_link_libraries(${PROJECT_NAME}_node
-  pointcloud_access
-  yaml-cpp
-  navigation
-  ${catkin_LIBRARIES}
-)
+#add_executable(${PROJECT_NAME}_node src/plane_navigation_node.cpp)
+#
+#target_link_libraries(${PROJECT_NAME}_node
+#  yaml-cpp
+#  navigation
+#  ${catkin_LIBRARIES}
+#)
 
 add_executable(testing src/test.cpp)
 
@@ -61,7 +59,15 @@ target_link_libraries(testing
   yaml-cpp
 )
 
-install(TARGETS ${PROJECT_NAME}_node testing
+#add_executable(grabber src/small_scans_grabber.cpp)
+#target_link_libraries( grabber
+#  ${catkin_LIBRARIES}
+#)
+
+install(TARGETS
+  testing
+#  ${PROJECT_NAME}_node
+#  grabber
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
