@@ -8,6 +8,8 @@ project(plane_navigation)
 # )
 #find_package (Threads REQUIRED)
 
+# find_package (Threads REQUIRED)
+
 #add_message_files(
 #  FILES
 #  DroneSensors.msg
@@ -39,9 +41,12 @@ include_directories(
 
 ## Declare a C++ library
 
-add_library(navigation src/plane_navigation.cpp)cd 
+add_library(navigation src/plane_navigation.cpp)
 # add_dependencies(navigation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries (navigation yaml-cpp ${catkin_LIBRARIES})
+target_link_libraries (navigation yaml-cpp ${catkin_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+# add_library(navigation src/plane_navigation.cpp)
+# add_dependencies(navigation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# target_link_libraries (navigation Threads::Threads)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -56,12 +61,17 @@ target_link_libraries (navigation yaml-cpp ${catkin_LIBRARIES})
 #  ${catkin_LIBRARIES}
 #)
 
-add_executable(testing src/test.cpp)
+#add_executable(testing src/test.cpp)
+#
+#target_link_libraries(testing
+#  ${catkin_LIBRARIES}
+#  navigation
+#)
 
-target_link_libraries(testing
+add_executable(grabber src/small_scans_grabber.cpp)
+target_link_libraries( grabber
   ${catkin_LIBRARIES}
   navigation
-  yaml-cpp
 )
 
 #add_executable(grabber src/small_scans_grabber.cpp)

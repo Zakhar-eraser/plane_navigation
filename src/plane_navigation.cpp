@@ -2,6 +2,7 @@
 #include <numeric>
 #include <yaml-cpp/yaml.h>
 #include <algorithm>
+#include <unistd.h>
 
 #define CONTROLLER_LOOP_RATE 30
 
@@ -129,12 +130,12 @@ Navigator::Navigator(std::string configPath, SensorScans *scans)
 Navigator::~Navigator()
 {
     threadStop = true;
-    //navigatorThread.join();
+    navigatorThread.join();
 }
 
 void Navigator::StartNavigator()
 {
-    //navigatorThread = std::thread(&Navigator::ThreadLoop, this);
+    navigatorThread = std::thread(&Navigator::ThreadLoop, this);
 }
 
 void Navigator::SetNavigatorState(bool stop)
@@ -147,6 +148,7 @@ void Navigator::ThreadLoop()
     while(!threadStop)
     {
         CalculatePose();
+        usleep(sleepTime * 1e6);
     }
 }
 
@@ -192,7 +194,7 @@ void Navigator::CalculatePose()
             turnedBackPosition = Transform(std::make_pair(0, pose), turn);
             turnedBackPose.x = turnedBackPosition.first + offsets.first;
             turnedBackPose.y = turnedBackPosition.second + offsets.second;
-            turnedBackPose.angle = angle + atan2(normal.second, normal.first);
+            turnedBackPose.angle = angle + atan2(-normal.second, -normal.first);
             poses.push_back(turnedBackPose);
         }
     }
