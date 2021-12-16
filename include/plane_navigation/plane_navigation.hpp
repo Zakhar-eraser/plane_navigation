@@ -16,22 +16,22 @@ private:
     std::thread navigatorThread;
     bool threadStop;
     float sleepTime;
-
     std::map<std::string, Segment> map;
     std::map<std::string, Segment> transformedMap;
 
     std::vector<float> linkedPoses;
     std::vector<Pose> poses;
     SensorScans *scans = nullptr;
-    void CalculatePose();
     void ThreadLoop();
     void CalculationCycle(std::string passingId, float length, std::pair<float, float> transform);
     void TransformedMap(std::pair<float, float> start, float angle);
     void SetNavigatorState(bool stop);
 public:
+    bool isUpdate;
     Navigator(std::string configPath, SensorScans *scans);
     ~Navigator();
     void StartNavigator();
+    void CalculatePose();
     Pose GetMinDiversePosition(Pose initPos);
 };
 

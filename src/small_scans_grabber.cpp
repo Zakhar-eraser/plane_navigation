@@ -69,7 +69,8 @@ int main(int argc, char **argv)
     Pose lastPose(0, 0, 0);
 
     Navigator nav("/home/argus/catkin_ws/src/ScanController/plane_navigation/config/map.yaml", scans);
-    nav.StartNavigator();
+
+    // nav.StartNavigator();
 
     while(ros::ok())
     {
@@ -77,7 +78,9 @@ int main(int argc, char **argv)
         angleUpdated = true;
         if(frontUpdated && leftUpdated && rightUpdated && angleUpdated)
         {
+            nav.isUpdate = true;
             *scans = temp;
+            nav.CalculatePose();
             data.header.stamp = ros::Time::now();
             lastPose = nav.GetMinDiversePosition(lastPose);
             data.pose.position.x = lastPose.x;

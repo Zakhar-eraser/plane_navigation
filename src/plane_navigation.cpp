@@ -115,6 +115,7 @@ Navigator::Navigator(std::string configPath, SensorScans *scans)
 {
     sleepTime = 1.0f / CONTROLLER_LOOP_RATE;
     this->scans = scans;
+    isUpdate = false;
 
     YAML::Node node = YAML::LoadFile(configPath)["lines"];
     for(YAML::const_iterator i = node.begin(); i != node.end(); ++i)
@@ -147,7 +148,10 @@ void Navigator::ThreadLoop()
 {
     while(!threadStop)
     {
-        CalculatePose();
+        if (isUpdate)
+        {
+            CalculatePose();
+        }
         usleep(sleepTime * 1e6);
     }
 }
@@ -197,11 +201,13 @@ void Navigator::CalculatePose()
             turnedBackPose.angle = angle + atan2(-normal.second, -normal.first);
             poses.push_back(turnedBackPose);
         }
+        int ll =0;
     }
 }
 
 Pose Navigator::GetMinDiversePosition(Pose initPos)
 {
+    // int ll =0;
     return *(std::min_element(poses.begin(), poses.end(), [&initPos](Pose a, Pose b)
     {
         return (a.x - initPos.x) * (a.x - initPos.x) + (a.y - initPos.y) * (a.y - initPos.y) < (b.x - initPos.x) * (b.x - initPos.x) + (b.y - initPos.y) * (b.y - initPos.y);
