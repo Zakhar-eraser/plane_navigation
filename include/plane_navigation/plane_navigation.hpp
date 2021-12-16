@@ -26,12 +26,12 @@ private:
     void CalculatePose();
     void ThreadLoop();
     void CalculationCycle(std::string passingId, float length, std::pair<float, float> transform);
-    void StartNavigator();
     void TransformedMap(std::pair<float, float> start, float angle);
     void SetNavigatorState(bool stop);
 public:
     Navigator(std::string configPath, SensorScans *scans);
     ~Navigator();
+    void StartNavigator();
     Pose GetMinDiversePosition(Pose initPos);
 };
 

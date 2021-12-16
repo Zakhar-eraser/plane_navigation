@@ -51,23 +51,22 @@ target_link_libraries (navigation Threads::Threads)
 #  ${catkin_LIBRARIES}
 #)
 
-add_executable(testing src/test.cpp)
-
-target_link_libraries(testing
-  ${catkin_LIBRARIES}
-  navigation
-  yaml-cpp
-)
-
-#add_executable(grabber src/small_scans_grabber.cpp)
-#target_link_libraries( grabber
+#add_executable(testing src/test.cpp)
+#
+#target_link_libraries(testing
 #  ${catkin_LIBRARIES}
+#  navigation
 #)
 
+add_executable(grabber src/small_scans_grabber.cpp)
+target_link_libraries( grabber
+  ${catkin_LIBRARIES}
+)
+
 install(TARGETS
-  testing
+#  testing
 #  ${PROJECT_NAME}_node
-#  grabber
+  grabber
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}

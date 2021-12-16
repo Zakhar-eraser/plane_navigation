@@ -2,6 +2,7 @@
 #include <numeric>
 #include <yaml-cpp/yaml.h>
 #include <algorithm>
+#include <unistd.h>
 
 #define CONTROLLER_LOOP_RATE 30
 
@@ -147,6 +148,7 @@ void Navigator::ThreadLoop()
     while(!threadStop)
     {
         CalculatePose();
+        usleep(sleepTime * 1e6);
     }
 }
 

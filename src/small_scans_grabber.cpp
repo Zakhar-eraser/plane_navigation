@@ -1,8 +1,8 @@
 #include <ros/ros.h>
 #include <std_msgs/Float32.h>
 #include <sensor_msgs/Range.h>
-#include <geometry_msgs/PointStamped.h>
-#include <plane_na>
+#include <geometry_msgs/PoseStamped.h>
+#include <plane_navigation.hpp>
 
 ros::NodeHandle *n;
 
@@ -19,24 +19,25 @@ bool angleUpdated = false;
 ros::Publisher dataPub;
 
 SensorScans *scans;
+SensorScans temp;
 
 void RangeCallback(sensor_msgs::RangeConstPtr msg)
 {
     if(msg->header.frame_id == "range_front")
     {
-        scans->front = msg->range;
+        temp.front = msg->range;
         frontUpdated = true;
     }else if(msg->header.frame_id == "range_left")
     {
-        scans->left = msg->range;
+        temp.left = msg->range;
         leftUpdated = true;
     }else if(msg->header.frame_id == "range_right")
     {
-        scans->right = msg->range;
+        temp.right = msg->range;
         rightUpdated = true;
     }else
     {
-        scans->back = msg->range;
+        temp.back = msg->range;
     }
 }
 
@@ -52,9 +53,9 @@ int main(int argc, char **argv)
     n = new ros::NodeHandle();
     scans = new SensorScans();
 
-    geometry_msgs::PointStamped data;
+    geometry_msgs::PoseStamped data;
 
-    dataPub = n->advertise<geometry_msgs::PointStamped>("estimated_pose", 1);
+    dataPub = n->advertise<geometry_msgs::PoseStamped>("estimated_pose", 1);
 
     frontSub = n->subscribe<sensor_msgs::Range>("/range_front", 1, RangeCallback);
     leftSub = n->subscribe<sensor_msgs::Range>("/range_left", 1, RangeCallback);
@@ -63,15 +64,25 @@ int main(int argc, char **argv)
 
     ros::Rate rate(30);
 
+    std::vector<float> startPos(2);
+    n->getParam("start_position", startPos);
+    Pose lastPose(startPos[0], startPos[1], 0);
 
+    Navigator nav("/home/zakhar/catkin_ws/src/plane_navigation/config/map.yaml", scans);
+    nav.StartNavigator();
 
     while(ros::ok())
     {
         if(frontUpdated && leftUpdated && rightUpdated && angleUpdated)
         {
+            *scans = temp;
             data.header.stamp = ros::Time::now();
-            frontUpdated = leftUpdated = rightUpdated = angleUpdated = false;
+            lastPose = nav.GetMinDiversePosition(lastPose);
+            data.pose.position.x = lastPose.x;
+            data.pose.position.y = lastPose.y;
+            data.pose.orientation.x = lastPose.angle;
             dataPub.publish(data);
+            frontUpdated = leftUpdated = rightUpdated = angleUpdated = false;
         }
     }
     
