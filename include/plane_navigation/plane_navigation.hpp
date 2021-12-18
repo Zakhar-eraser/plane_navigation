@@ -7,6 +7,7 @@
 #include <limits>
 #include <thread>
 #include <NavigationStructs.hpp>
+using pair = std::pair<float, float>;
 
 class Segment;
 
@@ -23,8 +24,8 @@ private:
     std::vector<Pose> poses;
     SensorScans *scans = nullptr;
     void ThreadLoop();
-    void CalculationCycle(std::string passingId, float length, std::pair<float, float> transform);
-    void TransformedMap(std::pair<float, float> start, float angle);
+    void CalculationCycle(std::string passingId, float length, pair transform, pair laserDir);
+    void TransformedMap(pair start, float angle);
     void SetNavigatorState(bool stop);
 public:
     bool isUpdate;
@@ -38,22 +39,22 @@ public:
 class Segment
 {
     private:
-        std::pair<float, float> start;
-        std::pair<float, float> end;
-        std::pair<float, float> normal;
-        Segment TransformLine(float angle, std::pair<float, float> start);
+        pair start;
+        pair end;
+        pair normal;
+        Segment TransformLine(float angle, pair start);
         Segment GetLineWithOffset(float offset);
-        friend float GetPositionByWall(Segment wall, float distance, std::pair<float, float> vec);
+        friend float GetPositionByWall(Segment wall, float distance, pair vec);
         std::map<std::string, Segment> TransformedMap(std::map<std::string, Segment> &map, float angle);
-        bool NotInRange(std::pair<float, float> pos);
+        bool NotInRange(pair pos);
     public:
         Segment();
-        Segment(std::pair<float, float> point1, std::pair<float, float> point2, float angle);
-        Segment(std::pair<float, float> point1, std::pair<float, float> point2, std::pair<float, float> normal);
+        Segment(pair point1, pair point2, float angle);
+        Segment(pair point1, pair point2, pair normal);
         friend class Navigator;
 };
 
-float GetRotationAngle(std::pair<float, float> curNormal, std::pair<float, float> goalNormal);
+float GetRotationAngle(pair curNormal, pair goalNormal);
 
-std::pair<float, float> Transform(std::pair<float, float> pointInRelated, float angleInWorld);
+pair Transform(pair pointInRelated, float angleInWorld);
 #endif

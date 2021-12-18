@@ -60,15 +60,15 @@ int main(int argc, char **argv)
     frontSub = n->subscribe<sensor_msgs::Range>("/range_front_right", 1, RangeCallback);
     leftSub = n->subscribe<sensor_msgs::Range>("/range_left", 1, RangeCallback);
     rightSub = n->subscribe<sensor_msgs::Range>("/range_right", 1, RangeCallback);
-    angleSub = n->subscribe<std_msgs::Float32>("/angle", 1, AngleCallback);
+    angleSub = n->subscribe<std_msgs::Float32>("/yaw", 1, AngleCallback);
 
     ros::Rate rate(30);
 
     std::vector<float> startPos(2);
     n->getParam("start_position", startPos);
-    Pose lastPose(0, 0, 0);
+    Pose lastPose(0, 5, 0);
 
-    Navigator nav("/home/argus/catkin_ws/src/ScanController/plane_navigation/config/map.yaml", scans);
+    Navigator nav("/home/zakhar/projects/shaft_drone/ScanController/plane_navigation/config/map.yaml", scans);
 
     // nav.StartNavigator();
 
@@ -87,7 +87,7 @@ int main(int argc, char **argv)
             data.pose.position.y = lastPose.y;
             data.pose.orientation.x = lastPose.angle;
             dataPub.publish(data);
-            frontUpdated = leftUpdated = rightUpdated = angleUpdated = false;
+            frontUpdated = leftUpdated = rightUpdated = false;
         }
         ros::spinOnce();
     }

@@ -17,12 +17,12 @@ Pose::Pose(float x, float y, float angle)
     this->angle = angle;
 }
 
-float GetRotationAngle(std::pair<float, float> curNormal, std::pair<float, float> goalNormal)
+float GetRotationAngle(pair curNormal, pair goalNormal)
 {
     return asin(curNormal.first * goalNormal.second - curNormal.second * goalNormal.first);
 }
 
-std::pair<float, float> Transform(std::pair<float, float> pointInRelated, float angleInWorld)
+pair Transform(pair pointInRelated, float angleInWorld)
 {
     float s = sin(angleInWorld);
     float c = cos(angleInWorld);
@@ -35,14 +35,14 @@ Segment::Segment()
     
 }
 
-Segment::Segment(std::pair<float, float> point1, std::pair<float, float> point2, float angle)
+Segment::Segment(pair point1, pair point2, float angle)
 {
     start = point1;
     end = point2;
     this->normal = std::make_pair(cos(angle), sin(angle));
 }
 
-Segment::Segment(std::pair<float, float> point1, std::pair<float, float> point2, std::pair<float, float> normal)
+Segment::Segment(pair point1, pair point2, pair normal)
 {
     start = point1;
     end = point2;
@@ -59,19 +59,19 @@ Segment Segment::GetLineWithOffset(float offset)
     return line;
 }
 
-Segment Segment::TransformLine(float angle, std::pair<float, float> start)
+Segment Segment::TransformLine(float angle, pair start)
 {
-    std::pair<float, float> newStart = Transform(std::make_pair(this->start.first - start.first,
+    pair newStart = Transform(std::make_pair(this->start.first - start.first,
                                                               this->start.second - start.second),
                                                               angle);
-    std::pair<float, float> newEnd = Transform(std::make_pair(this->end.first - start.first,
+    pair newEnd = Transform(std::make_pair(this->end.first - start.first,
                                                               this->end.second - start.second),
                                                               angle);
-    std::pair<float, float> newNormal = Transform(this->normal, angle);
+    pair newNormal = Transform(this->normal, angle);
     return Segment(newStart, newEnd, newNormal);
 }
 
-bool Segment::NotInRange(std::pair<float, float> pos)
+bool Segment::NotInRange(pair pos)
 {
     float minX = std::min(start.first, end.first);
     float maxX = std::max(start.first, end.first);
@@ -80,7 +80,7 @@ bool Segment::NotInRange(std::pair<float, float> pos)
     return pos.first < minX || pos.first > maxX || pos.second < minY || pos.second > maxY;
 }
 
-float GetPositionByWall(Segment wall, float distance, std::pair<float, float> vec)
+float GetPositionByWall(Segment wall, float distance, pair vec)
 {
     float x2 = wall.start.first;
     float y2 = wall.start.second;
@@ -103,7 +103,7 @@ float GetPositionByWall(Segment wall, float distance, std::pair<float, float> ve
     } return y0;
 }
 
-void Navigator::TransformedMap(std::pair<float, float> start, float angle)
+void Navigator::TransformedMap(pair start, float angle)
 {
     for(auto line : map)
     {
@@ -121,8 +121,8 @@ Navigator::Navigator(std::string configPath, SensorScans *scans)
     for(YAML::const_iterator i = node.begin(); i != node.end(); ++i)
     {
         std::string key = i->first.as<std::string>();
-        std::pair<float, float> start = i->second["start"].as<std::pair<float, float>>();
-        std::pair<float, float> end = i->second["end"].as<std::pair<float, float>>();
+        pair start = i->second["start"].as<pair>();
+        pair end = i->second["end"].as<pair>();
         float angle = i->second["angle"].as<float>();
         map[key] = Segment(start, end, angle);
     }
@@ -156,13 +156,14 @@ void Navigator::ThreadLoop()
     }
 }
 
-void Navigator::CalculationCycle(std::string passingId, float length, std::pair<float, float> transform)
+void Navigator::CalculationCycle(std::string passingId, float length, pair transform, pair laserDir)
 {
     for(auto &crossLine : transformedMap)
     {
-        if(crossLine.first != passingId)
+        Segment &line = crossLine.second;
+        if(crossLine.first != passingId && laserDir.first * line.normal.first + laserDir.second * line.normal.second < 0.0001)
         {
-            float y = GetPositionByWall(crossLine.second, length,
+            float y = GetPositionByWall(line, length,
                                          transform);
             if(!std::isnan(y)) linkedPoses.push_back(y);
         }
@@ -181,18 +182,20 @@ void Navigator::CalculatePose()
         float c = cos(angle);
         float s = sin(angle);
         float offset = scans->front * c;
-        std::pair<float, float> normal = line.normal;
+        pair normal = line.normal;
         float turn = GetRotationAngle(std::make_pair(1.0f, 0.0f), normal);
         Segment lineWithOffset = line.GetLineWithOffset(offset);
         TransformedMap(lineWithOffset.start, -turn);
 
-        CalculationCycle(lineDescript.first, scans->back, std::make_pair(c, s));
-        CalculationCycle("", scans->left, std::make_pair(s, -c));
-        CalculationCycle("", scans->right, std::make_pair(-s, c));
+        //CalculationCycle(lineDescript.first, scans->back, std::make_pair(c, s), std::make_pair(c, -s));
+        //CalculationCycle("", scans->left, std::make_pair(s, -c), Transform(std::make_pair(-c, -s), -turn));
+        //CalculationCycle("", scans->right, std::make_pair(-s, c), Transform(std::make_pair(c, s), -turn));
+        CalculationCycle("", scans->left, std::make_pair(s, -c), std::make_pair(s, -c));
+        CalculationCycle("", scans->right, std::make_pair(-s, c), std::make_pair(-s, c));
 
-        std::pair<float, float> turnedBackPosition;
+        pair turnedBackPosition;
         Pose turnedBackPose;
-        std::pair<float, float> offsets = lineWithOffset.start;
+        pair offsets = lineWithOffset.start;
         for(float &pose : linkedPoses)
         {
             turnedBackPosition = Transform(std::make_pair(0, pose), turn);
@@ -201,7 +204,7 @@ void Navigator::CalculatePose()
             turnedBackPose.angle = angle + atan2(-normal.second, -normal.first);
             poses.push_back(turnedBackPose);
         }
-        int ll =0;
+        int ii = 0;
     }
 }
 
