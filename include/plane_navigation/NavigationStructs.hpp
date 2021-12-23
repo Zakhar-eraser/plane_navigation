@@ -1,5 +1,19 @@
 #ifndef NAV_STRUCTS
 #define NAV_STRUCTS
+
+#include <utility>
+using pair = std::pair<float, float>;
+
+struct Switcher
+{
+    bool left;
+    bool right;
+    bool back;
+
+    Switcher();
+    Switcher(bool left, bool right, bool back);
+};
+
 struct Pose
 {
     float x = 0.0f;
@@ -8,6 +22,23 @@ struct Pose
 
     Pose();
     Pose(float x, float y, float angle);
+    Pose& operator=(pair position);
+};
+
+struct Offsets
+{
+    Pose front;
+    Pose back;
+    Pose left;
+    Pose right;
+
+    Offsets(pair front, pair back, pair left, pair right)
+    {
+        this->front = front;
+        this->back = back;
+        this->left = left;
+        this->right = right;
+    }
 };
 
 struct SensorScans

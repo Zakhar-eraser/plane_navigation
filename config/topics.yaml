@@ -1,0 +1,7 @@
+range_front_topic: '/range_front'
+range_left_topic: '/range_left'
+range_right_topic: '/range_right'
+range_back_topic: '/range_back'
+yaw_topic: '/yaw'
+
+pose_topic: '/estimated_pose'
