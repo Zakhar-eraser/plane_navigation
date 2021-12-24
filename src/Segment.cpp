@@ -18,6 +18,7 @@ Segment::Segment(pair point1, pair point2, float angle)
     start = point1;
     end = point2;
     this->normal = std::make_pair(cos(angle), sin(angle));
+    this->angle = angle;
 }
 
 Segment::Segment(pair point1, pair point2, pair normal)
@@ -75,9 +76,8 @@ float GetPositionByWall(Segment wall, float distance, pair vec)
         yc = m2 / n2 * (x2 - vec.first * distance) + y2;
         y0 = yc - distance * vec.second;
     }
-    //if(wall.NotInRange(std::make_pair(0, yc)))
-    //{
-    //    return NANF;
-    //} return y0;
-    return y0;
+    if(wall.NotInRange(std::make_pair(0, yc)))
+    {
+        return NANF;
+    } return y0;
 }

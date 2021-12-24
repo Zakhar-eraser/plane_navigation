@@ -24,7 +24,7 @@ private:
     SensorScans *scans = nullptr;
     void ThreadLoop();
     void CalculationCycle(float length, pair transform, pair laserDir);
-    void TransformedMap(pair start, float angle);
+    void TransformedMap(Segment baseLine);
     void SetNavigatorState(bool stop);
     void CalibrateMap(std::string wallId);
 public:
@@ -35,8 +35,6 @@ public:
     void CalculatePose();
     Pose GetMinDiversePosition(Pose initPos);
 };
-
-float GetRotationAngle(pair curNormal, pair goalNormal);
 
 pair Transform(pair pointInRelated, float angleInWorld);
 #endif

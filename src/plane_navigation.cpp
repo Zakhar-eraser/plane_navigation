@@ -6,16 +6,11 @@
 
 #define CONTROLLER_LOOP_RATE 30
 
-float GetRotationAngle(pair curNormal, pair goalNormal)
-{
-    return asin(curNormal.first * goalNormal.second - curNormal.second * goalNormal.first);
-}
-
-void Navigator::TransformedMap(pair start, float angle)
+void Navigator::TransformedMap(Segment baseLine)
 {
     for(auto line : map)
     {
-        transformedMap[line.first] = line.second.TransformLine(angle, start);
+        transformedMap[line.first] = line.second.TransformLine(-baseLine.angle, baseLine.start);
     }
 }
 
@@ -69,7 +64,7 @@ void Navigator::CalculationCycle(float length, pair transform, pair laserDir)
     for(auto &crossLine : transformedMap)
     {
         Segment &line = crossLine.second;
-        if(/*laserDir.first * line.normal.first + laserDir.second * line.normal.second < 0.0f*/true)
+        if(laserDir.first * line.normal.first + laserDir.second * line.normal.second < 0.0f)
         {
             float y = GetPositionByWall(line, length,
                                          transform);
@@ -91,9 +86,8 @@ void Navigator::CalculatePose()
         float s = sin(angle);
         float offset = scans->front * c;
         pair normal = line.normal;
-        float turn = GetRotationAngle(std::make_pair(1.0f, 0.0f), normal);
         Segment lineWithOffset = line.GetLineWithOffset(offset);
-        TransformedMap(lineWithOffset.start, -turn);
+        TransformedMap(lineWithOffset);//?????
 
         if(switcher.back) CalculationCycle(scans->back, std::make_pair(c, s), std::make_pair(c, -s));
         if(switcher.left) CalculationCycle(scans->left, std::make_pair(s, -c), std::make_pair(s, -c));
@@ -104,7 +98,7 @@ void Navigator::CalculatePose()
         pair offsets = lineWithOffset.start;
         for(float &pose : linkedPoses)
         {
-            turnedBackPosition = Transform(std::make_pair(0, pose), turn);
+            turnedBackPosition = Transform(std::make_pair(0, pose), lineWithOffset.angle);
             turnedBackPose.x = turnedBackPosition.first + offsets.first;
             turnedBackPose.y = turnedBackPosition.second + offsets.second;
             turnedBackPose.angle = angle + atan2(-normal.second, -normal.first);

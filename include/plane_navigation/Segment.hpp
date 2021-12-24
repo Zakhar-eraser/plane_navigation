@@ -14,6 +14,7 @@ class Segment
         pair start;
         pair end;
         pair normal;
+        float angle;
         Segment TransformLine(float angle, pair start);
         Segment GetLineWithOffset(float offset);
         friend float GetPositionByWall(Segment wall, float distance, pair vec);
