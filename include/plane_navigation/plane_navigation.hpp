@@ -29,7 +29,7 @@ private:
     void CalibrateMap(std::string wallId);
 public:
     bool isUpdate;
-    Navigator(std::string configPath, SensorScans *scans, Switcher switcher);
+    Navigator(std::string configPath, SensorScans *scans, Switcher switcher, Offsets offsets);
     ~Navigator();
     void StartNavigator();
     void CalculatePose();

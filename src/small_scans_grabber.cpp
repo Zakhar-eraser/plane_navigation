@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 
     Pose lastPose(initPose["x"].as<float>(), initPose["y"].as<float>(), 0);
 
-    Navigator nav("../../plane_navigation/config/map.yaml", scans, switcher);
+    Navigator nav("../../plane_navigation/config/map.yaml", scans, switcher, sensorsTf);
 
     // nav.StartNavigator();
 

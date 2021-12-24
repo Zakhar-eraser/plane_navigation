@@ -14,7 +14,7 @@ void Navigator::TransformedMap(Segment baseLine)
     }
 }
 
-Navigator::Navigator(std::string configPath, SensorScans *scans, Switcher switcher)
+Navigator::Navigator(std::string configPath, SensorScans *scans, Switcher switcher, Offsets offsets)
 {
     sleepTime = 1.0f / CONTROLLER_LOOP_RATE;
     this->scans = scans;
@@ -87,7 +87,7 @@ void Navigator::CalculatePose()
         float offset = scans->front * c;
         pair normal = line.normal;
         Segment lineWithOffset = line.GetLineWithOffset(offset);
-        TransformedMap(lineWithOffset);//?????
+        TransformedMap(lineWithOffset);
 
         if(switcher.back) CalculationCycle(scans->back, std::make_pair(c, s), std::make_pair(c, -s));
         if(switcher.left) CalculationCycle(scans->left, std::make_pair(s, -c), std::make_pair(s, -c));
