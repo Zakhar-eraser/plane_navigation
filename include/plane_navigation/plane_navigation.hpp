@@ -13,6 +13,11 @@ using pair = std::pair<float, float>;
 class Navigator
 {
 private:
+    bool frontUpdated;
+    bool backUpdated;
+    bool leftUpdated;
+    bool rightUpdated;
+    bool angleUpdated;
     std::thread navigatorThread;
     bool threadStop;
     float sleepTime;
@@ -28,7 +33,6 @@ private:
     void SetNavigatorState(bool stop);
     void CalibrateMap(std::string wallId);
 public:
-    bool isUpdate;
     Navigator(std::string configPath, SensorScans *scans, Switcher switcher);
     ~Navigator();
     void StartNavigator();

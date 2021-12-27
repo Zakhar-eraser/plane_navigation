@@ -51,9 +51,12 @@ void Navigator::ThreadLoop()
 {
     while(!threadStop)
     {
-        if (isUpdate)
+        if(frontUpdated && (leftUpdated || !switcher.left) && (rightUpdated || !switcher.right) &&  (backUpdated || !switcher.back) && angleUpdated)
         {
-            CalculatePose();
+            *scans = temp;
+            nav.CalculatePose();
+            lastPose = nav.GetMinDiversePosition(lastPose);
+            angleUpdated = backUpdated = frontUpdated = leftUpdated = rightUpdated = false;
         }
         usleep(sleepTime * 1e6);
     }
