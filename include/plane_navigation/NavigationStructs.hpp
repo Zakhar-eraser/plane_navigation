@@ -21,8 +21,11 @@ struct Pose
     float angle = 0.0f;
 
     Pose();
+    Pose(pair position);
     Pose(float x, float y, float angle);
     Pose& operator=(pair position);
+    Pose& operator+(Pose& pose);
+    Pose& operator-(Pose& pose);
 };
 
 struct Offsets
@@ -31,14 +34,8 @@ struct Offsets
     Pose back;
     Pose left;
     Pose right;
-
-    Offsets(pair front, pair back, pair left, pair right)
-    {
-        this->front = front;
-        this->back = back;
-        this->left = left;
-        this->right = right;
-    }
+    Offsets();
+    Offsets(pair front, pair back, pair left, pair right);
 };
 
 struct SensorScans
@@ -47,6 +44,8 @@ struct SensorScans
     float right = 0.0f;
     float front = 0.0f;
     float back = 0.0f;
-    float angle = 0.0f;
+    float yaw = 0.0f;
+    float pitch = 0.0f;
+    float roll = 0.0f;
 };
 #endif

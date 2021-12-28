@@ -58,26 +58,3 @@ bool Segment::NotInRange(pair pos)
     float maxY = std::max(start.second, end.second);
     return pos.first < minX || pos.first > maxX || pos.second < minY || pos.second > maxY;
 }
-
-float GetPositionByWall(Segment wall, float distance, pair vec)
-{
-    float x2 = wall.start.first;
-    float y2 = wall.start.second;
-    float m2 = wall.normal.first;
-    float n2 = wall.normal.second;
-    float y0;
-    float yc;
-    if(n2 == 0.0f)
-    {
-        return NANF;
-    }
-    else
-    {
-        yc = m2 / n2 * (x2 - vec.first * distance) + y2;
-        y0 = yc - distance * vec.second;
-    }
-    if(wall.NotInRange(std::make_pair(0, yc)))
-    {
-        return NANF;
-    } return y0;
-}

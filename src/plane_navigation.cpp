@@ -66,9 +66,24 @@ void Navigator::CalculationCycle(float length, pair transform, pair laserDir)
         Segment &line = crossLine.second;
         if(laserDir.first * line.normal.first + laserDir.second * line.normal.second < 0.0f)
         {
-            float y = GetPositionByWall(line, length,
-                                         transform);
-            if(!std::isnan(y)) linkedPoses.push_back(y);
+            float n2 = line.normal.second;
+            if(abs(n2) > 0.08f)
+            {
+                float x2 = line.start.first;
+                float y2 = line.start.second;
+                float m2 = line.normal.first;
+                float xc = transform.first * length;
+                float yc = m2 / n2 * (x2 - xc) + y2; //check
+                float y0 = yc - length * transform.second;
+                float rot = scans->yaw + M_PI_2;
+                pair relativePos(0, y0);
+                if(!line.NotInRange(std::make_pair(xc, yc)))
+                {
+                    relativePos = Transform(relativePos, -rot);
+                    relativePos.first -= laserOffsets.front.x;
+                    linkedPoses.push_back(Transform(relativePos, rot));
+                }
+            }
         }
     }
 }
@@ -81,24 +96,30 @@ void Navigator::CalculatePose()
         transformedMap.clear();
         linkedPoses.clear();
         Segment line(lineDescript.second);
-        float angle = scans->angle;
+
+        float angle = scans->yaw;
         float c = cos(angle);
         float s = sin(angle);
-        float offset = scans->front * c;
+        float offset = (scans->front - laserOffsets.front.y) * c;
+        float leftRange = (scans->left + laserOffsets.front.x - laserOffsets.left.x) * cos(scans->roll);
+        float rightRange = (scans->right + laserOffsets.front.x - laserOffsets.right.x) * cos(scans->roll);
+        float backRange = (scans->back + laserOffsets.back.y) * cos(scans->pitch);
+
         pair normal = line.normal;
         Segment lineWithOffset = line.GetLineWithOffset(offset);
         TransformedMap(lineWithOffset);
 
-        if(switcher.back) CalculationCycle(scans->back, std::make_pair(c, s), std::make_pair(c, -s));
-        if(switcher.left) CalculationCycle(scans->left, std::make_pair(s, -c), std::make_pair(s, -c));
-        if(switcher.right) CalculationCycle(scans->right, std::make_pair(-s, c), std::make_pair(-s, c));
+
+        if(switcher.back) CalculationCycle(backRange, std::make_pair(c, s), std::make_pair(c, -s));
+        if(switcher.left) CalculationCycle(leftRange, std::make_pair(s, -c), std::make_pair(s, -c));
+        if(switcher.right) CalculationCycle(rightRange, std::make_pair(-s, c), std::make_pair(-s, c));
 
         pair turnedBackPosition;
         Pose turnedBackPose;
         pair offsets = lineWithOffset.start;
-        for(float &pose : linkedPoses)
+        for(pair &pose : linkedPoses)
         {
-            turnedBackPosition = Transform(std::make_pair(0, pose), lineWithOffset.angle);
+            turnedBackPosition = Transform(pose, lineWithOffset.angle);
             turnedBackPose.x = turnedBackPosition.first + offsets.first;
             turnedBackPose.y = turnedBackPosition.second + offsets.second;
             turnedBackPose.angle = angle + atan2(-normal.second, -normal.first);

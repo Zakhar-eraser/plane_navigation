@@ -17,7 +17,6 @@ class Segment
         float angle;
         Segment TransformLine(float angle, pair start);
         Segment GetLineWithOffset(float offset);
-        friend float GetPositionByWall(Segment wall, float distance, pair vec);
         std::map<std::string, Segment> TransformedMap(std::map<std::string, Segment> &map, float angle);
         bool NotInRange(pair pos);
     public:
