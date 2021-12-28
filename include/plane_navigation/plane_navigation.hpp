@@ -9,6 +9,7 @@
 #include <NavigationStructs.hpp>
 #include "Segment.hpp"
 using pair = std::pair<float, float>;
+using string = std::string;
 
 class Navigator
 {
@@ -27,14 +28,16 @@ private:
     void CalculationCycle(float length, pair transform, pair laserDir);
     void TransformedMap(Segment baseLine);
     void SetNavigatorState(bool stop);
-    void CalibrateMap(float absYaw);
+    void CalibrateMap(string wallId, float absYaw);
 public:
     bool isUpdate;
     Navigator(std::string configPath, SensorScans *scans, Switcher switcher, Offsets offsets);
     ~Navigator();
     void StartNavigator();
-    void CalculatePose();
+    void CalculatePoses();
+    void CalculatePosesByWall(string wallId, float yaw);
     Pose GetMinDiversePosition(Pose initPos);
+    Pose GetMeanPosition();
 };
 
 pair Transform(pair pointInRelated, float angleInWorld);

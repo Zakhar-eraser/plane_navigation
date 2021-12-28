@@ -28,6 +28,41 @@ Segment::Segment(pair point1, pair point2, pair normal)
     this->normal = normal;
 }
 
+pair Segment::Cross(Segment segment)
+{
+    if(sin(this->angle - segment.angle) > 0.08)
+    {
+        float m1 = normal.first;
+        float n1 = normal.second;
+        float m2 = segment.normal.first;
+        float n2 = segment.normal.second;
+        float x1 = start.first;
+        float y1 = start.second;
+        float x2 = segment.start.first;
+        float y2 = segment.start.second;
+        pair cross;
+        if(abs(n2) > 0.08)
+        {
+            if(abs(m1) > 0.08)
+            {
+                cross.second = m2 / n2 * (x2 - n1 / m1 * y1 - x1) / (1 - m2 * n1 / (n2 * m1));
+            }
+            else
+            {
+                cross.second = y1;
+            }
+            cross.first = n2 / m2 * (y2 - cross.second) + x2;
+        }
+        else
+        {
+            cross.first = x2;
+            cross.second = m1 / n1 * (x1 - cross.first) + y1;
+        }
+        if(!segment.NotInRange(cross)) return cross;
+    }
+    return std::make_pair(NANF, NANF);
+}
+
 Segment Segment::GetLineWithOffset(float offset)
 {
     Segment line(*this);

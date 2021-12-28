@@ -14,7 +14,7 @@ void Navigator::TransformedMap(Segment baseLine)
     }
 }
 
-Navigator::Navigator(std::string configPath, SensorScans *scans, Switcher switcher, Offsets offsets)
+Navigator::Navigator(string configPath, SensorScans *scans, Switcher switcher, Offsets offsets)
 {
     sleepTime = 1.0f / CONTROLLER_LOOP_RATE;
     this->scans = scans;
@@ -23,7 +23,7 @@ Navigator::Navigator(std::string configPath, SensorScans *scans, Switcher switch
     YAML::Node node = YAML::LoadFile(configPath)["lines"];
     for(YAML::const_iterator i = node.begin(); i != node.end(); ++i)
     {
-        std::string key = i->first.as<std::string>();
+        string key = i->first.as<string>();
         pair start = i->second["start"].as<pair>();
         pair end = i->second["end"].as<pair>();
         float angle = i->second["angle"].as<float>();
@@ -53,7 +53,7 @@ void Navigator::ThreadLoop()
     {
         if (isUpdate)
         {
-            CalculatePose();
+            CalculatePoses();
         }
         usleep(sleepTime * 1e6);
     }
@@ -88,45 +88,69 @@ void Navigator::CalculationCycle(float length, pair transform, pair laserDir)
     }
 }
 
-void Navigator::CalculatePose()
+void Navigator::CalculatePosesByWall(string wallId, float yaw)
+{
+    transformedMap.clear();
+    linkedPoses.clear();
+    Segment line = map[wallId];
+    float c = cos(yaw);
+    float s = sin(yaw);
+    float offset = (scans->front - laserOffsets.front.y) * c;
+    float leftRange = (scans->left + laserOffsets.front.x - laserOffsets.left.x) * cos(scans->roll);
+    float rightRange = (scans->right + laserOffsets.front.x - laserOffsets.right.x) * cos(scans->roll);
+    float backRange = (scans->back + laserOffsets.back.y) * cos(scans->pitch);
+
+    pair normal = line.normal;
+    Segment lineWithOffset = line.GetLineWithOffset(offset);
+    TransformedMap(lineWithOffset);
+
+    if(switcher.back) CalculationCycle(backRange, std::make_pair(c, s), std::make_pair(c, -s));
+    if(switcher.left) CalculationCycle(leftRange, std::make_pair(s, -c), std::make_pair(s, -c));
+    if(switcher.right) CalculationCycle(rightRange, std::make_pair(-s, c), std::make_pair(-s, c));
+
+    pair turnedBackPosition;
+    Pose turnedBackPose;
+    pair offsets = lineWithOffset.start;
+    for(pair &pose : linkedPoses)
+    {
+        turnedBackPosition = Transform(pose, lineWithOffset.angle);
+        turnedBackPose.x = turnedBackPosition.first + offsets.first;
+        turnedBackPose.y = turnedBackPosition.second + offsets.second;
+        turnedBackPose.angle = yaw + lineWithOffset.angle - M_PI;
+        poses.push_back(turnedBackPose);
+    }
+}
+
+void Navigator::CalculatePoses()
 {
     poses.clear();
     for(auto &lineDescript : map)
     {
-        transformedMap.clear();
-        linkedPoses.clear();
-        Segment line(lineDescript.second);
-
-        float angle = scans->yaw;
-        float c = cos(angle);
-        float s = sin(angle);
-        float offset = (scans->front - laserOffsets.front.y) * c;
-        float leftRange = (scans->left + laserOffsets.front.x - laserOffsets.left.x) * cos(scans->roll);
-        float rightRange = (scans->right + laserOffsets.front.x - laserOffsets.right.x) * cos(scans->roll);
-        float backRange = (scans->back + laserOffsets.back.y) * cos(scans->pitch);
-
-        pair normal = line.normal;
-        Segment lineWithOffset = line.GetLineWithOffset(offset);
-        TransformedMap(lineWithOffset);
-
-
-        if(switcher.back) CalculationCycle(backRange, std::make_pair(c, s), std::make_pair(c, -s));
-        if(switcher.left) CalculationCycle(leftRange, std::make_pair(s, -c), std::make_pair(s, -c));
-        if(switcher.right) CalculationCycle(rightRange, std::make_pair(-s, c), std::make_pair(-s, c));
-
-        pair turnedBackPosition;
-        Pose turnedBackPose;
-        pair offsets = lineWithOffset.start;
-        for(pair &pose : linkedPoses)
-        {
-            turnedBackPosition = Transform(pose, lineWithOffset.angle);
-            turnedBackPose.x = turnedBackPosition.first + offsets.first;
-            turnedBackPose.y = turnedBackPosition.second + offsets.second;
-            turnedBackPose.angle = angle + atan2(-normal.second, -normal.first);
-            poses.push_back(turnedBackPose);
-        }
-        int ii = 0;
+        CalculatePosesByWall(lineDescript.first, scans->yaw);
     }
+}
+
+Pose Navigator::GetMeanPosition()
+{
+    Pose meanPose;
+    unsigned int count = poses.size();
+    for(Pose &pose : poses)
+    {
+        meanPose = meanPose + pose;
+        meanPose.angle += pose.angle;
+    }
+    meanPose.x /= count;
+    meanPose.y /= count;
+    meanPose.angle /= count;
+    return meanPose;
+}
+
+void Navigator::CalibrateMap(string wallId, float absYaw)
+{
+    poses.clear();
+    CalculatePosesByWall(wallId, absYaw);
+    Pose meanPose = GetMeanPosition();
+    
 }
 
 Pose Navigator::GetMinDiversePosition(Pose initPos)

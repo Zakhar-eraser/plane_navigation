@@ -23,6 +23,7 @@ class Segment
         Segment();
         Segment(pair point1, pair point2, float angle);
         Segment(pair point1, pair point2, pair normal);
+        pair Cross(Segment segment);
         friend class Navigator;
 };
 #endif
