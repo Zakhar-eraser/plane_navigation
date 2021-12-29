@@ -49,7 +49,7 @@ void RangeCallback(sensor_msgs::RangeConstPtr msg)
 
 void AngleCallback(std_msgs::Float32ConstPtr msg)
 {
-    scans->angle = msg->data;
+    temp.yaw = msg->data;
     angleUpdated = true;
 }
 
@@ -95,8 +95,14 @@ int main(int argc, char **argv)
         if(frontUpdated && (leftUpdated || !switcher.left) && (rightUpdated || !switcher.right) &&  (backUpdated || !switcher.back) && angleUpdated)
         {
             nav.isUpdate = true;
-            *scans = temp;
-            nav.CalculatePose();
+            scans->back = temp.back;
+            scans->front = temp.front;
+            scans->left = temp.left;
+            scans->right = temp.right;
+            scans->yaw = temp.yaw;
+            scans->pitch = scans->pitch;
+            scans->roll = scans->roll;
+            nav.CalculatePoses();
             data.header.stamp = ros::Time::now();
             lastPose = nav.GetMinDiversePosition(lastPose);
             data.pose.position.x = lastPose.x;
@@ -106,6 +112,7 @@ int main(int argc, char **argv)
             angleUpdated = backUpdated = frontUpdated = leftUpdated = rightUpdated = false;
         }
         ros::spinOnce();
+        rate.sleep();
     }
     
     delete scans;

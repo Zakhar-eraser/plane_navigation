@@ -116,7 +116,7 @@ void Navigator::CalculatePosesByWall(string wallId, float yaw)
         turnedBackPosition = Transform(pose, lineWithOffset.angle);
         turnedBackPose.x = turnedBackPosition.first + offsets.first;
         turnedBackPose.y = turnedBackPosition.second + offsets.second;
-        turnedBackPose.angle = yaw + lineWithOffset.angle - M_PI;
+        turnedBackPose.angle = yaw;//yaw + lineWithOffset.angle - M_PI;
         poses.push_back(turnedBackPose);
     }
 }
