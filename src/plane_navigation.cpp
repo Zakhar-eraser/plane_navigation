@@ -51,10 +51,10 @@ void Navigator::ThreadLoop()
 {
     while(!threadStop)
     {
-        if (isUpdate)
-        {
-            CalculatePoses();
-        }
+        //if (isUpdate)
+        //{
+        //    CalculatePoses();
+        //}
         usleep(sleepTime * 1e6);
     }
 }

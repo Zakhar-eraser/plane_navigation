@@ -87,9 +87,9 @@ Segment Segment::TransformLine(float angle, pair start)
 
 bool Segment::NotInRange(pair pos)
 {
-    float minX = std::min(start.first, end.first);
-    float maxX = std::max(start.first, end.first);
-    float minY = std::min(start.second, end.second);
-    float maxY = std::max(start.second, end.second);
+    float minX = std::min(start.first, end.first) - allowance;
+    float maxX = std::max(start.first, end.first) + allowance;
+    float minY = std::min(start.second, end.second) - allowance;
+    float maxY = std::max(start.second, end.second) + allowance;
     return pos.first < minX || pos.first > maxX || pos.second < minY || pos.second > maxY;
 }

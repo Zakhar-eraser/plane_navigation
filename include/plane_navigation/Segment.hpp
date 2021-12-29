@@ -11,6 +11,7 @@ class Navigator;
 class Segment
 {
     private:
+        float allowance = 0.1f;
         pair start;
         pair end;
         pair normal;

@@ -82,7 +82,7 @@ int main(int argc, char **argv)
     angleSub = n->subscribe<std_msgs::Float32>(topicsNode["yaw_topic"].as<std::string>(), 1, AngleCallback);
 
 
-    ros::Rate rate(30);
+    ros::Rate rate(10);
 
     Pose lastPose(initPose["x"].as<float>(), initPose["y"].as<float>(), 0);
 
