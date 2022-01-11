@@ -30,10 +30,13 @@ private:
     SensorScans *scans = nullptr;
     Offsets laserOffsets;
     void ThreadLoop();
-    void CalculationCycle(float length, pair transform, pair laserDir);
-    void TransformedMap(Segment baseLine);
+    void CalculationCycle(bool switcher, pair mapStart, pair startInRelated, float otherRange,
+                                 pair transform, pair laserDir, float yaw, float mapAngle);
+    void TransformMap(pair start);
+    void RotateMap(float angle);
     void SetNavigatorState(bool stop);
     void CalibrateMap(string wallId, float absYaw);
+    void ReturnPose(float yaw, float wallAngle, pair oldCenter);
 public:
     bool isUpdate;
     Navigator(std::string configPath, SensorScans *scans, Switcher switcher, Offsets offsets);
@@ -44,6 +47,4 @@ public:
     Pose GetMinDiversePosition(Pose initPos);
     Pose GetMeanPosition();
 };
-
-pair Transform(pair pointInRelated, float angleInWorld);
 #endif

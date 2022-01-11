@@ -1,11 +1,16 @@
 #include "Segment.hpp"
 
-pair Transform(pair pointInRelated, float angleInWorld)
+pair Rotate(pair pointInRelated, float angleInWorld)
 {
     float s = sin(angleInWorld);
     float c = cos(angleInWorld);
     return std::make_pair<float, float> (pointInRelated.first * c - pointInRelated.second * s,
                                          pointInRelated.second * c + pointInRelated.first * s);
+}
+
+pair Transform(pair point, pair center)
+{
+    return std::make_pair(point.first - center.first, point.second - center.second);
 }
 
 Segment::Segment()
@@ -73,16 +78,18 @@ Segment Segment::GetLineWithOffset(float offset)
     return line;
 }
 
-Segment Segment::TransformLine(float angle, pair start)
+Segment Segment::RotatedSegment(float angle)
 {
-    pair newStart = Transform(std::make_pair(this->start.first - start.first,
-                                                              this->start.second - start.second),
-                                                              angle);
-    pair newEnd = Transform(std::make_pair(this->end.first - start.first,
-                                                              this->end.second - start.second),
-                                                              angle);
-    pair newNormal = Transform(this->normal, angle);
+    pair newStart = Rotate(std::make_pair(this->start.first, this->start.second), angle);
+    pair newEnd = Rotate(std::make_pair(this->end.first, this->end.second), angle);
+    pair newNormal = Rotate(this->normal, angle);
     return Segment(newStart, newEnd, newNormal);
+}
+
+void Segment::TransformSegment(pair start)
+{
+    this->start = Transform(this->start, start);
+    this->end = Transform(this->end, start);
 }
 
 bool Segment::NotInRange(pair pos)

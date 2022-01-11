@@ -16,7 +16,8 @@ class Segment
         pair end;
         pair normal;
         float angle;
-        Segment TransformLine(float angle, pair start);
+        void TransformSegment(pair start);
+        Segment RotatedSegment(float angle);
         Segment GetLineWithOffset(float offset);
         std::map<std::string, Segment> TransformedMap(std::map<std::string, Segment> &map, float angle);
         bool NotInRange(pair pos);
@@ -27,4 +28,7 @@ class Segment
         pair Cross(Segment segment);
         friend class Navigator;
 };
+
+pair Rotate(pair pointInRelated, float angleInWorld);
+pair Transform(pair point, pair center);
 #endif

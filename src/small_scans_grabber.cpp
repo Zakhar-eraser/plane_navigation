@@ -19,38 +19,55 @@ bool rightUpdated = false;
 bool backUpdated = false;
 bool angleUpdated = false;
 
+Navigator *nav;
+
 ros::Publisher dataPub;
+
+geometry_msgs::PoseStamped data;
 
 YAML::Node frameIds;
 
 SensorScans *scans;
-SensorScans temp;
+
+Switcher switcher;
 
 void RangeCallback(sensor_msgs::RangeConstPtr msg)
 {
     if(msg->header.frame_id == frameIds["front_id"].as<std::string>())
     {
-        temp.front = msg->range;
+        scans->front = msg->range;
         frontUpdated = true;
     }else if(msg->header.frame_id == frameIds["left_id"].as<std::string>())
     {
-        temp.left = msg->range;
+        scans->left = msg->range;
         leftUpdated = true;
     }else if(msg->header.frame_id == frameIds["right_id"].as<std::string>())
     {
-        temp.right = msg->range;
+        scans->right = msg->range;
         rightUpdated = true;
     }else
     {
-        temp.back = msg->range;
+        scans->back = msg->range;
         backUpdated = true;
     }
 }
 
 void AngleCallback(std_msgs::Float32ConstPtr msg)
 {
-    temp.yaw = msg->data;
+    scans->yaw = msg->data;
     angleUpdated = true;
+    //if(frontUpdated && (leftUpdated || !switcher.left) && (rightUpdated || !switcher.right) &&  (backUpdated || !switcher.back))
+    //{
+    //    //nav.isUpdate = true;
+    //    nav->CalculatePoses();
+    //    data.header.stamp = ros::Time::now();
+    //    *lastPose = nav->GetMinDiversePosition(*lastPose);
+    //    data.pose.position.x = lastPose->x;
+    //    data.pose.position.y = lastPose->y;
+    //    data.pose.orientation.x = lastPose->angle;
+    //    dataPub.publish(data);
+    //    backUpdated = frontUpdated = leftUpdated = rightUpdated = false;
+    //}
 }
 
 int main(int argc, char **argv)
@@ -59,12 +76,12 @@ int main(int argc, char **argv)
     n = new ros::NodeHandle();
     scans = new SensorScans();
 
-    geometry_msgs::PoseStamped data;
+    //geometry_msgs::PoseStamped data;
     //Node with topic paths
     YAML::Node topicsNode = YAML::LoadFile("../../plane_navigation/config/topics.yaml");
     //What sensors must be accounted. Read from a yaml file and write the data to a Switcher structur
     YAML::Node switcherNode = YAML::LoadFile("../../plane_navigation/config/sensor_switcher.yaml");
-    Switcher switcher(switcherNode["use_left"].as<bool>(), switcherNode["use_right"].as<bool>(), switcherNode["use_back"].as<bool>());
+    switcher = Switcher(switcherNode["use_left"].as<bool>(), switcherNode["use_right"].as<bool>(), switcherNode["use_back"].as<bool>());
     //Sensors offsets. Read from a yaml file and write the data to a Offsets structure
     YAML::Node sensorTfNode = YAML::LoadFile("../../plane_navigation/config/sensors_tf.yaml");
     Offsets sensorsTf(sensorTfNode["front"].as<pair>(), sensorTfNode["back"].as<pair>(), sensorTfNode["left"].as<pair>(), sensorTfNode["right"].as<pair>());
@@ -82,11 +99,11 @@ int main(int argc, char **argv)
     angleSub = n->subscribe<std_msgs::Float32>(topicsNode["yaw_topic"].as<std::string>(), 1, AngleCallback);
 
 
-    ros::Rate rate(10);
+    ros::Rate rate(20);
 
     Pose lastPose(initPose["x"].as<float>(), initPose["y"].as<float>(), 0);
 
-    Navigator nav("../../plane_navigation/config/map.yaml", scans, switcher, sensorsTf);
+    nav = new Navigator("../../plane_navigation/config/map.yaml", scans, switcher, sensorsTf);
 
     // nav.StartNavigator();
 
@@ -94,17 +111,10 @@ int main(int argc, char **argv)
     {
         if(frontUpdated && (leftUpdated || !switcher.left) && (rightUpdated || !switcher.right) &&  (backUpdated || !switcher.back) && angleUpdated)
         {
-            nav.isUpdate = true;
-            scans->back = temp.back;
-            scans->front = temp.front;
-            scans->left = temp.left;
-            scans->right = temp.right;
-            scans->yaw = temp.yaw;
-            scans->pitch = scans->pitch;
-            scans->roll = scans->roll;
-            nav.CalculatePoses();
+            nav->isUpdate = true;
+            nav->CalculatePoses();
             data.header.stamp = ros::Time::now();
-            lastPose = nav.GetMinDiversePosition(lastPose);
+            lastPose = nav->GetMinDiversePosition(lastPose);
             data.pose.position.x = lastPose.x;
             data.pose.position.y = lastPose.y;
             data.pose.orientation.x = lastPose.angle;
@@ -114,8 +124,9 @@ int main(int argc, char **argv)
         ros::spinOnce();
         rate.sleep();
     }
-    
+    ros::spin();
     delete scans;
+    delete nav;
     delete n;
     return 0;
 }

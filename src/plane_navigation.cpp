@@ -3,19 +3,29 @@
 #include <yaml-cpp/yaml.h>
 #include <algorithm>
 #include <unistd.h>
+#include <iostream>
 
 #define CONTROLLER_LOOP_RATE 30
 
-void Navigator::TransformedMap(Segment baseLine)
+void Navigator::RotateMap(float angle)
 {
-    for(auto line : map)
+    for(auto &line : map)
     {
-        transformedMap[line.first] = line.second.TransformLine(-baseLine.angle, baseLine.start);
+        transformedMap[line.first] = line.second.RotatedSegment(angle);
+    }
+}
+
+void Navigator::TransformMap(pair start)
+{
+    for(auto &line : transformedMap)
+    {
+        line.second.TransformSegment(start);
     }
 }
 
 Navigator::Navigator(string configPath, SensorScans *scans, Switcher switcher, Offsets offsets)
 {
+    laserOffsets = offsets;
     sleepTime = 1.0f / CONTROLLER_LOOP_RATE;
     this->scans = scans;
     isUpdate = false;
@@ -59,29 +69,38 @@ void Navigator::ThreadLoop()
     }
 }
 
-void Navigator::CalculationCycle(float length, pair transform, pair laserDir)
+void Navigator::CalculationCycle(bool switcher, pair mapStart, pair startInRelated, float otherRange,
+                                 pair transform, pair laserDir, float yaw, float mapAngle)
 {
-    for(auto &crossLine : transformedMap)
+    if(switcher)
     {
-        Segment &line = crossLine.second;
-        if(laserDir.first * line.normal.first + laserDir.second * line.normal.second < 0.0f)
+        TransformMap(mapStart);
+        for(auto &crossLine : transformedMap)
         {
-            float n2 = line.normal.second;
-            if(abs(n2) > 0.08f)
+            Segment &line = crossLine.second;
+            if(laserDir.first * line.normal.first + laserDir.second * line.normal.second < -0.08f)
             {
-                float x2 = line.start.first;
-                float y2 = line.start.second;
-                float m2 = line.normal.first;
-                float xc = transform.first * length;
-                float yc = m2 / n2 * (x2 - xc) + y2; //check
-                float y0 = yc - length * transform.second;
-                float rot = scans->yaw + M_PI_2;
-                pair relativePos(0, y0);
-                if(!line.NotInRange(std::make_pair(xc, yc)))
+                float n2 = line.normal.second;
+                if(abs(n2) > 0.08f)
                 {
-                    relativePos = Transform(relativePos, -rot);
-                    relativePos.first -= laserOffsets.front.x;
-                    linkedPoses.push_back(Transform(relativePos, rot));
+                    float x2 = line.start.first;
+                    float y2 = line.start.second;
+                    float m2 = line.normal.first;
+                    float xc = transform.first * otherRange;
+                    float yc = m2 / n2 * (x2 - xc) + y2;
+                    float y0 = yc - otherRange * transform.second;
+                    float rot = yaw + M_PI_2;
+                    pair tempPos(0, y0);
+                    if(!line.NotInRange(std::make_pair(xc, yc)))
+                    {
+                        //Offset in relative frame
+                        tempPos = Rotate(tempPos, -rot);
+                        tempPos = Transform(tempPos, startInRelated);
+                        tempPos = Rotate(tempPos, rot);
+                        //Getting a pos in the map frame
+                        tempPos = Rotate(Transform(tempPos, std::make_pair(-mapStart.first, -mapStart.second)), mapAngle);
+                        poses.push_back(Pose(tempPos.first, tempPos.second, yaw + mapAngle + M_PI_2));
+                    }
                 }
             }
         }
@@ -90,35 +109,30 @@ void Navigator::CalculationCycle(float length, pair transform, pair laserDir)
 
 void Navigator::CalculatePosesByWall(string wallId, float yaw)
 {
-    transformedMap.clear();
-    linkedPoses.clear();
-    Segment line = map[wallId];
     float c = cos(yaw);
     float s = sin(yaw);
-    float offset = (scans->front - laserOffsets.front.y) * c;
-    float leftRange = (scans->left + laserOffsets.front.x - laserOffsets.left.x) * cos(scans->roll);
-    float rightRange = (scans->right + laserOffsets.front.x - laserOffsets.right.x) * cos(scans->roll);
-    float backRange = (scans->back + laserOffsets.back.y) * cos(scans->pitch);
+    float mapAngle = map[wallId].angle;
+    RotateMap(-mapAngle);
+    Segment seg = transformedMap[wallId];
+    float frontRange, otherRange, startX, startY;
 
-    pair normal = line.normal;
-    Segment lineWithOffset = line.GetLineWithOffset(offset);
-    TransformedMap(lineWithOffset);
-
-    if(switcher.back) CalculationCycle(backRange, std::make_pair(c, s), std::make_pair(c, -s));
-    if(switcher.left) CalculationCycle(leftRange, std::make_pair(s, -c), std::make_pair(s, -c));
-    if(switcher.right) CalculationCycle(rightRange, std::make_pair(-s, c), std::make_pair(-s, c));
-
-    pair turnedBackPosition;
-    Pose turnedBackPose;
-    pair offsets = lineWithOffset.start;
-    for(pair &pose : linkedPoses)
-    {
-        turnedBackPosition = Transform(pose, lineWithOffset.angle);
-        turnedBackPose.x = turnedBackPosition.first + offsets.first;
-        turnedBackPose.y = turnedBackPosition.second + offsets.second;
-        turnedBackPose.angle = yaw;//yaw + lineWithOffset.angle - M_PI;
-        poses.push_back(turnedBackPose);
-    }
+    frontRange = (scans->front + laserOffsets.front.y) * cos(scans->pitch);
+    otherRange = (scans->back - laserOffsets.back.y) * cos(scans->pitch);
+    CalculationCycle(switcher.back, std::make_pair(seg.start.first + frontRange * cos(yaw), seg.start.second),
+                     std::make_pair((laserOffsets.front.x + laserOffsets.back.x) / 2, 0), otherRange,
+                     std::make_pair(c, s), std::make_pair(c, -s), yaw, mapAngle);
+    
+    frontRange = (scans->front + laserOffsets.front.y - laserOffsets.left.y) * cos(scans->pitch);
+    otherRange = (scans->left + laserOffsets.front.x - laserOffsets.left.x) * cos(scans->roll);
+    CalculationCycle(switcher.left, std::make_pair(seg.start.first + frontRange * cos(yaw), seg.start.second),
+                     std::make_pair(laserOffsets.front.x, laserOffsets.left.y), otherRange,
+                     std::make_pair(s, -c), std::make_pair(s, -c), yaw, mapAngle);
+    
+    frontRange = (scans->front + laserOffsets.front.y - laserOffsets.right.y) * cos(scans->pitch);
+    otherRange = (scans->right + laserOffsets.right.x - laserOffsets.front.x) * cos(scans->roll);
+    CalculationCycle(switcher.right, std::make_pair(seg.start.first + frontRange * cos(yaw), seg.start.second),
+                     std::make_pair(laserOffsets.front.x, laserOffsets.right.y), otherRange,
+                     std::make_pair(-s, c), std::make_pair(-s, c), yaw, mapAngle);
 }
 
 void Navigator::CalculatePoses()
