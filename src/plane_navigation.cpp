@@ -75,6 +75,7 @@ void Navigator::CalculationCycle(bool switcher, pair mapStart, pair startInRelat
     if(switcher)
     {
         TransformMap(mapStart);
+        pair mapStartRet(-mapStart.first, -mapStart.second);
         for(auto &crossLine : transformedMap)
         {
             Segment &line = crossLine.second;
@@ -98,12 +99,13 @@ void Navigator::CalculationCycle(bool switcher, pair mapStart, pair startInRelat
                         tempPos = Transform(tempPos, startInRelated);
                         tempPos = Rotate(tempPos, rot);
                         //Getting a pos in the map frame
-                        tempPos = Rotate(Transform(tempPos, std::make_pair(-mapStart.first, -mapStart.second)), mapAngle);
+                        tempPos = Rotate(Transform(tempPos, mapStartRet), mapAngle);
                         poses.push_back(Pose(tempPos.first, tempPos.second, yaw + mapAngle + M_PI_2));
                     }
                 }
             }
         }
+        TransformMap(mapStartRet);
     }
 }
 
@@ -133,6 +135,7 @@ void Navigator::CalculatePosesByWall(string wallId, float yaw)
     CalculationCycle(switcher.right, std::make_pair(seg.start.first + frontRange * cos(yaw), seg.start.second),
                      std::make_pair(laserOffsets.front.x, laserOffsets.right.y), otherRange,
                      std::make_pair(-s, c), std::make_pair(-s, c), yaw, mapAngle);
+    RotateMap(mapAngle);
 }
 
 void Navigator::CalculatePoses()
