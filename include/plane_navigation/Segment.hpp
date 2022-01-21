@@ -3,8 +3,8 @@
 #include <map>
 #include <cmath>
 #include <limits>
+#include <NavigationStructs.hpp>
 #define NANF std::numeric_limits<float>::quiet_NaN()
-using pair = std::pair<float, float>;
 
 class Navigator;
 
@@ -12,23 +12,23 @@ class Segment
 {
     private:
         float allowance = 0.1f;
-        pair start;
-        pair end;
-        pair normal;
+        Position start;
+        Position end;
+        Position normal;
         float angle;
-        void TransformSegment(pair start);
+        void TransformSegment(Position start);
         Segment RotatedSegment(float angle);
         Segment GetLineWithOffset(float offset);
         std::map<std::string, Segment> TransformedMap(std::map<std::string, Segment> &map, float angle);
-        bool NotInRange(pair pos);
+        bool NotInRange(Position pos);
     public:
         Segment();
-        Segment(pair point1, pair point2, float angle);
-        Segment(pair point1, pair point2, pair normal);
-        pair Cross(Segment segment);
+        Segment(Position point1, Position point2, float angle);
+        Segment(Position point1, Position point2, Position normal);
+        Position Cross(Segment segment);
         friend class Navigator;
 };
 
-pair Rotate(pair pointInRelated, float angleInWorld);
-pair Transform(pair point, pair center);
+Position Rotated(Position pointInRelated, float angleInWorld);
+Position Transformed(Position point, Position center);
 #endif
