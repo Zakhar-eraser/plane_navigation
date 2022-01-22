@@ -1,4 +1,4 @@
-use_left: false
+use_left: true
 use_right: true
 use_back: false
 use_front: true
