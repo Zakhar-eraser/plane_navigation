@@ -39,7 +39,7 @@ public:
     ~Navigator();
     void StartNavigator();
     void CalculatePoses();
-    void CalculatePosesByLaserPair(float absAngle, float yaw, float roll, float pitch, LaserData left, LaserData front);
+    void CalculatePosesByLaserPair(float absAngle, float roll, float pitch, LaserData left, LaserData front);
     Pose GetMinDiversePosition(Pose initPos);
     Pose GetMeanPosition();
 };

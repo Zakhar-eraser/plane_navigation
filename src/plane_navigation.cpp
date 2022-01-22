@@ -106,13 +106,14 @@ void Navigator::CalculationCycle(Position mapStart, Position startInRelated, flo
     TransformMap(mapStartRet);
 }
 
-void Navigator::CalculatePosesByLaserPair(float absAngle, float yaw, float roll, float pitch, LaserData left, LaserData front)
+void Navigator::CalculatePosesByLaserPair(float absAngle, float roll, float pitch, LaserData left, LaserData front)
 {
     if(left.isOn && front.isOn)
     {
         for(auto &wall : map)
         {
             float mapAngle = wall.second.angle;
+            float relYaw = absAngle - mapAngle;
             if(cos(mapAngle) * cos(absAngle) + sin(mapAngle) * sin(absAngle) < -0.08f)
             {
                 RotateMap(-mapAngle);
@@ -121,9 +122,9 @@ void Navigator::CalculatePosesByLaserPair(float absAngle, float yaw, float roll,
 
                 frontRange = (front.range + front.offsets.y - left.offsets.y) * cos(pitch);
                 otherRange = (left.range + front.offsets.x - left.offsets.x) * cos(roll);
-                CalculationCycle(Position(seg.start.x + frontRange * cos(yaw), seg.start.y),
+                CalculationCycle(Position(seg.start.x + frontRange * cos(relYaw), seg.start.y),
                                  Position(front.offsets.x, left.offsets.y), otherRange,
-                                 yaw, mapAngle);
+                                 relYaw, mapAngle);
 
                 RotateMap(mapAngle);
             }
@@ -137,13 +138,27 @@ void Navigator::CalculatePoses()
     for(auto &wall : map)
     {
         float absAngle = wall.second.angle + scans->yaw;
-        CalculatePosesByLaserPair(absAngle, scans->yaw, scans->roll, scans->pitch,
-                                  scans->leftLaser, scans->frontLaser);
-        CalculatePosesByLaserPair(absAngle - M_PI_2, scans->yaw - M_PI_2, scans->pitch, scans->roll,
-                                  scans->frontLaser, scans->rightLaser);
-        CalculatePosesByLaserPair(absAngle - M_PI, scans->yaw - M_PI, scans->roll, scans->pitch,
-                                  scans->rightLaser, scans->backLaser);
-        CalculatePosesByLaserPair(absAngle + M_PI_2, scans->yaw + M_PI_2, scans->pitch, scans->roll,
+        LaserData left = scans->leftLaser;
+        LaserData front = scans->frontLaser;
+        CalculatePosesByLaserPair(absAngle, scans->roll, scans->pitch,
+                                  left, front);
+        left = scans->frontLaser;
+        left.offsets = Rotated(left.offsets, M_PI_2);
+        front = scans->rightLaser;
+        front.offsets = Rotated(front.offsets, M_PI_2);
+        CalculatePosesByLaserPair(absAngle - M_PI_2, scans->pitch, scans->roll,
+                                  left, front);
+        left = scans->rightLaser;
+        left.offsets = Rotated(left.offsets, M_PI);
+        front = scans->backLaser;
+        front.offsets = Rotated(front.offsets, M_PI);
+        CalculatePosesByLaserPair(absAngle - M_PI, scans->roll, scans->pitch,
+                                  left, front);
+        left = scans->backLaser;
+        left.offsets = Rotated(left.offsets, -M_PI_2);
+        front = scans->leftLaser;
+        front.offsets = Rotated(front.offsets, -M_PI_2);
+        CalculatePosesByLaserPair(absAngle + M_PI_2, scans->pitch, scans->roll,
                                   scans->backLaser, scans->leftLaser);
     }
 }
