@@ -12,9 +12,9 @@ struct Position
     Position();
     Position(pair position);
     Position(float x, float y);
-    Position& operator=(pair position);
-    Position& operator+(Position &pose);
-    Position& operator-(Position &pose);
+    Position &operator=(pair position);
+    Position operator+(Position &pose);
+    Position operator-(Position &pose);
 };
 
 struct Pose
@@ -47,5 +47,13 @@ struct SensorScans
     float yaw = 0.0f;
     float pitch = 0.0f;
     float roll = 0.0f;
+};
+
+enum LaserPair
+{
+    LEFT_FRONT,
+    FRONT_RIGHT,
+    RIGHT_BACK,
+    BACK_LEFT
 };
 #endif

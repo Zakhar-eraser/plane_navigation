@@ -21,18 +21,20 @@ Position::Position(pair position)
     this->y = position.second;
 }
 
-Position& Position::operator+(Position &pose)
+Position Position::operator+(Position &pos)
 {
-    this->x += pose.x;
-    this->y += pose.y;
-    return *this;
+    Position newPos(*this);
+    newPos.x += pos.x;
+    newPos.y += pos.y;
+    return newPos;
 }
 
-Position& Position::operator-(Position &pose)
+Position Position::operator-(Position &pos)
 {
-    this->x -= pose.x;
-    this->y -= pose.y;
-    return *this;
+    Position newPos(*this);
+    newPos.x -= pos.x;
+    newPos.y -= pos.y;
+    return newPos;
 }
 
 LaserData::LaserData(){}

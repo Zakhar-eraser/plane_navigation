@@ -89,24 +89,22 @@ int main(int argc, char **argv)
     backSub = n->subscribe<sensor_msgs::Range>(topicsNode["range_back_topic"].as<std::string>(), 1, RangeCallback);
     angleSub = n->subscribe<std_msgs::Float32>(topicsNode["yaw_topic"].as<std::string>(), 1, AngleCallback);
 
-
     ros::Rate rate(20);
 
-    Pose lastPose(initPose["x"].as<float>(), initPose["y"].as<float>(), initPose["yaw"].as<float>());
-
     nav = new Navigator("../../plane_navigation/config/map.yaml", scans);
+    nav->SetLastPose(Pose(initPose["x"].as<float>(), initPose["y"].as<float>(), initPose["yaw"].as<float>()));
 
     // nav.StartNavigator();
-
+    Pose lastPose;
     while(ros::ok())
     {
         if((frontUpdated || !scans->frontLaser.isOn) && (leftUpdated || !scans->leftLaser.isOn) &&
            (rightUpdated || !scans->rightLaser.isOn) &&  (backUpdated || !scans->backLaser.isOn) && angleUpdated)
         {
             nav->isUpdate = true;
-            nav->CalculatePoses();
+            nav->CalculatePose();
+            lastPose = nav->GetPose();
             data.header.stamp = ros::Time::now();
-            lastPose = nav->GetMinDiversePosition(lastPose);
             data.pose.position.x = lastPose.position.x;
             data.pose.position.y = lastPose.position.y;
             data.pose.orientation.x = lastPose.angle;
