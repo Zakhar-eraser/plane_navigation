@@ -159,7 +159,7 @@ void Navigator::CalculatePoses()
         front = scans->leftLaser;
         front.offsets = Rotated(front.offsets, -M_PI_2);
         CalculatePosesByLaserPair(absAngle + M_PI_2, absAngle, scans->pitch, scans->roll,
-                                  scans->backLaser, scans->leftLaser);
+                                  left, front);
     }
 }
 
