@@ -1,4 +1,4 @@
-range_front_topic: '/range_front'
+range_front_topic: '/range_front_right'
 range_left_topic: '/range_left'
 range_right_topic: '/range_right'
 range_back_topic: '/range_back'

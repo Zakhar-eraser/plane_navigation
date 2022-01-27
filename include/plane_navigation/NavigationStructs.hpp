@@ -13,8 +13,8 @@ struct Position
     Position(pair position);
     Position(float x, float y);
     Position &operator=(pair position);
-    Position operator+(Position &pose);
-    Position operator-(Position &pose);
+    Position operator+(Position pos);
+    Position operator-(Position pos);
 };
 
 struct Pose

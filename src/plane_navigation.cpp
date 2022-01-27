@@ -112,17 +112,35 @@ Pose Navigator::GetMinDiversePose(Pose lastPose)
     }));
 }
 
-void Navigator::CalculationCycle(Position mapStart, Position startInRelated, float range,
-                                 float yaw, float mapAngle, float absAngle)
+void Navigator::CalculatePosesByFrontWall(float axisDir, float wallAngle, string frontWallId,
+                                          LaserData rotatedLeft, LaserData rotatedFront, float roll, float pitch)
 {
+    float mapAngle = map[frontWallId].angle;
+    RotateMap(-mapAngle);
+    float frontRange, otherRange, startX, startY;
+    Segment frontWall = transformedMap[frontWallId];
+    frontRange = (rotatedFront.range + rotatedFront.offsets.y - rotatedLeft.offsets.y) * cos(pitch);
+    otherRange = (rotatedLeft.range + rotatedFront.offsets.x - rotatedLeft.offsets.x) * cos(roll);
+    float absAngle = wallAngle - M_PI + scans->yaw;
+    float yaw = absAngle + axisDir - mapAngle + M_PI;
     float s = sin(yaw);
     float c = cos(yaw);
+    Position mapStart(frontWall.start.x + frontRange * c, frontWall.start.y);
+    Position startInRelated(rotatedFront.offsets.x, rotatedLeft.offsets.y);
     TransformMap(mapStart);
-    Position mapStartRet = Position(0, 0)- mapStart;
+    //Get last position in relative frame
+    Pose lastPoseInRelative(lastPose);
+    lastPoseInRelative.position = Transformed(Rotated(lastPose.position, -mapAngle), mapStart) + Position(frontRange * c, 0);
+    float crucialAng1 = atan2(lastPoseInRelative.position.y, lastPoseInRelative.position.x);
+    float crucialAng2 = crucialAng1 - M_PI_2;
+
+    Position mapStartRet = Position(0, 0) - mapStart;
     for(auto &crossLine : transformedMap)
     {
         Segment &line = crossLine.second;
-        if(s * line.normal.x - c * line.normal.y < -0.08f)
+        
+        if(s * line.normal.x - c * line.normal.y < -0.08f && frontWallId != crossLine.first &&
+           yaw < crucialAng1 && yaw > crucialAng2)
         {
             float n2 = line.normal.y;
             if(abs(n2) > 0.08f)
@@ -130,9 +148,9 @@ void Navigator::CalculationCycle(Position mapStart, Position startInRelated, flo
                 float x2 = line.start.x;
                 float y2 = line.start.y;
                 float m2 = line.normal.x;
-                float xc = s * range;
+                float xc = s * otherRange;
                 float yc = m2 / n2 * (x2 - xc) + y2;
-                float y0 = yc + range * c;
+                float y0 = yc + otherRange * c;
                 float rot = yaw + M_PI_2;
                 Position tempPos(0, y0);
                 if(!line.NotInRange(std::make_pair(xc, yc)))
@@ -149,61 +167,60 @@ void Navigator::CalculationCycle(Position mapStart, Position startInRelated, flo
         }
     }
     TransformMap(mapStartRet);
+    RotateMap(mapAngle);
 }
 
-void Navigator::CalculatePosesByLaserPair(float axisDir, unsigned int pair,
+void Navigator::CalculatePosesByAngleWall(float axisDir, float wallAngle,
+                                          LaserData rotatedLeft, LaserData rotatedFront, float roll, float pitch)
+{
+    float absAngle = wallAngle - M_PI + scans->yaw;
+    float curDirAbsAngle = absAngle + axisDir; 
+    for(auto &wall : map)
+    {
+        float mapAngle = wall.second.angle;
+        if(cos(mapAngle) * cos(curDirAbsAngle) + sin(mapAngle) * sin(curDirAbsAngle) < -0.08f)
+        {
+            float relYaw = curDirAbsAngle - mapAngle + M_PI;
+            CalculatePosesByFrontWall(axisDir, wallAngle, wall.first, rotatedLeft, rotatedFront, roll, pitch);
+        }
+    }
+}
+
+void Navigator::CalculatePoseByLaserPair(float axisDir, unsigned int pair,
                                           float roll, float pitch, LaserData left, LaserData front)
 {
-    pairPoses.clear();
     if(left.isOn && front.isOn)
     {
+        pairPoses.clear();
         left.offsets = Rotated(left.offsets, -axisDir);
         front.offsets = Rotated(front.offsets,  -axisDir);
         for(auto &angleWall : map)
         {
-            float angleWallAngle = angleWall.second.angle;
-            float absAngle = angleWallAngle - M_PI + scans->yaw;
-            float curDirAbsAngle = absAngle + axisDir; 
-            for(auto &wall : map)
-            {
-                float mapAngle = wall.second.angle;
-                if(cos(mapAngle) * cos(curDirAbsAngle) + sin(mapAngle) * sin(curDirAbsAngle) < -0.08f)
-                {
-                    float relYaw = curDirAbsAngle - mapAngle + M_PI;
-                    RotateMap(-mapAngle);
-                    Segment seg = transformedMap[wall.first];
-                    float frontRange, otherRange, startX, startY;
-
-                    frontRange = (front.range + front.offsets.y - left.offsets.y) * cos(pitch);
-                    otherRange = (left.range + front.offsets.x - left.offsets.x) * cos(roll);
-                    CalculationCycle(Position(seg.start.x + frontRange * cos(scans->yaw), seg.start.y),
-                                     Position(front.offsets.x, left.offsets.y), otherRange,
-                                     relYaw, mapAngle, absAngle);
-
-                    RotateMap(mapAngle);
-                }
-            }
+            CalculatePosesByAngleWall(axisDir, angleWall.second.angle, left, front, roll, pitch);
         }
+        /*------Laser pair filters place------*/
         if(pairPoses.size() > 0)
         {
             poses[pair] = GetMinDiversePose(lastPose);
         }
+        /*------Laser pair filters place------*/
     }
 }
 
 void Navigator::CalculatePose()
 {
     poses.clear();
-    CalculatePosesByLaserPair(0, LEFT_FRONT, scans->roll, scans->pitch,
+    CalculatePoseByLaserPair(0, LEFT_FRONT, scans->roll, scans->pitch,
                               scans->leftLaser, scans->frontLaser);
-    CalculatePosesByLaserPair(-M_PI_2, FRONT_RIGHT, scans->pitch, scans->roll,
+    CalculatePoseByLaserPair(-M_PI_2, FRONT_RIGHT, scans->pitch, scans->roll,
                               scans->frontLaser, scans->rightLaser);
-    CalculatePosesByLaserPair(-M_PI, RIGHT_BACK, scans->roll, scans->pitch,
+    CalculatePoseByLaserPair(-M_PI, RIGHT_BACK, scans->roll, scans->pitch,
                               scans->rightLaser, scans->backLaser);
-    CalculatePosesByLaserPair(M_PI_2, BACK_LEFT, scans->pitch, scans->roll,
+    CalculatePoseByLaserPair(M_PI_2, BACK_LEFT, scans->pitch, scans->roll,
                               scans->backLaser, scans->leftLaser);
+    /*------All poses filters place------*/
     lastPose = GetSlowestPose(lastPose);
-
+    /*------All poses filters place------*/
     for(auto &pose : poses)
     {
         lastPoses[pose.first] = pose.second;
@@ -212,16 +229,11 @@ void Navigator::CalculatePose()
 
 Pose Navigator::GetMeanPosition()
 {
-    Pose meanPose;
-    //unsigned int count = poses.size();
-    //for(Pose &pose : poses)
-    //{
-    //    meanPose.position = meanPose.position + pose.position;
-    //    meanPose.angle += pose.angle;
-    //}
-    //meanPose.position.x /= count;
-    //meanPose.position.y /= count;
-    //meanPose.angle /= count;
+    Pose meanPose = lastPose;
+    lastPose = std::accumulate(std::next(poses.begin()), poses.end(), poses[0], [](Pose a, std::pair<unsigned int, Pose> b)
+    {
+        return Pose(a.position + b.second.position, a.angle + b.second.angle);
+    });
     return meanPose;
 }
 

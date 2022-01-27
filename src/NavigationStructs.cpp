@@ -21,7 +21,7 @@ Position::Position(pair position)
     this->y = position.second;
 }
 
-Position Position::operator+(Position &pos)
+Position Position::operator+(Position pos)
 {
     Position newPos(*this);
     newPos.x += pos.x;
@@ -29,7 +29,7 @@ Position Position::operator+(Position &pos)
     return newPos;
 }
 
-Position Position::operator-(Position &pos)
+Position Position::operator-(Position pos)
 {
     Position newPos(*this);
     newPos.x -= pos.x;

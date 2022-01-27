@@ -23,8 +23,6 @@ private:
     SensorScans *scans = nullptr;
     Pose lastPose;
     void ThreadLoop();
-    void CalculationCycle(Position mapStart, Position startInRelated, float range,
-                                 float yaw, float mapAngle, float absAngle);
     //Filters
     Pose GetMinDiversePose(Pose initPos);
     Pose GetSlowestPose(Pose lastPose);
@@ -35,7 +33,10 @@ private:
 
     void SetNavigatorState(bool stop);
     void CalibrateSymmetricMap();
-    void CalculatePosesByLaserPair(float axisDir, unsigned int pair, float roll, float pitch, LaserData left, LaserData front);
+    void CalculatePosesByFrontWall(float axisDir, float wallAngle, string frontWallId,
+                                          LaserData rotatedLeft, LaserData rotatedFront, float roll, float pitch);
+    void CalculatePosesByAngleWall(float axisDir, float wallAngle, LaserData rotatedLeft, LaserData rotatedFront, float roll, float pitch);
+    void CalculatePoseByLaserPair(float axisDir, unsigned int pair, float roll, float pitch, LaserData left, LaserData front);
 public:
     bool isUpdate;
     Navigator(std::string configPath, SensorScans *scans);

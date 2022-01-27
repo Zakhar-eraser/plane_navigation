@@ -20,3 +20,8 @@ target_link_libraries( grabber
   ${catkin_LIBRARIES}
   navigation
 )
+
+add_executable(yaw src/test.cpp)
+target_link_libraries(yaw
+  ${catkin_LIBRARIES}
+)
