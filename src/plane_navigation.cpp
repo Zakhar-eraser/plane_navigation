@@ -32,7 +32,6 @@ void Navigator::TransformMap(Position start)
 Navigator::Navigator(string configPath, SensorScans *scans)
 {
     sleepTime = 1.0f / CONTROLLER_LOOP_RATE;
-    lastPoses.reserve(4);
     this->scans = scans;
     isUpdate = false;
     YAML::Node node = YAML::LoadFile(configPath)["lines"];
@@ -122,7 +121,7 @@ void Navigator::CalculatePosesByFrontWall(float axisDir, float wallAngle, string
     frontRange = (rotatedFront.range + rotatedFront.offsets.y - rotatedLeft.offsets.y) * cos(pitch);
     otherRange = (rotatedLeft.range + rotatedFront.offsets.x - rotatedLeft.offsets.x) * cos(roll);
     float absAngle = wallAngle - M_PI + scans->yaw;
-    float yaw = absAngle + axisDir - mapAngle + M_PI;
+    float yaw = asin(sin(absAngle + axisDir - mapAngle + M_PI));
     float s = sin(yaw);
     float c = cos(yaw);
     Position mapStart(frontWall.start.x + frontRange * c, frontWall.start.y);
@@ -139,8 +138,8 @@ void Navigator::CalculatePosesByFrontWall(float axisDir, float wallAngle, string
     {
         Segment &line = crossLine.second;
         
-        if(s * line.normal.x - c * line.normal.y < -0.08f && frontWallId != crossLine.first &&
-           yaw < crucialAng1 && yaw > crucialAng2)
+        if(s * line.normal.x - c * line.normal.y < -0.08f && frontWallId != crossLine.first/* &&
+           yaw < crucialAng1 && yaw > crucialAng2*/)
         {
             float n2 = line.normal.y;
             if(abs(n2) > 0.08f)
@@ -180,7 +179,6 @@ void Navigator::CalculatePosesByAngleWall(float axisDir, float wallAngle,
         float mapAngle = wall.second.angle;
         if(cos(mapAngle) * cos(curDirAbsAngle) + sin(mapAngle) * sin(curDirAbsAngle) < -0.08f)
         {
-            float relYaw = curDirAbsAngle - mapAngle + M_PI;
             CalculatePosesByFrontWall(axisDir, wallAngle, wall.first, rotatedLeft, rotatedFront, roll, pitch);
         }
     }
@@ -229,11 +227,15 @@ void Navigator::CalculatePose()
 
 Pose Navigator::GetMeanPosition()
 {
+    unsigned int count = poses.size();
     Pose meanPose = lastPose;
-    lastPose = std::accumulate(std::next(poses.begin()), poses.end(), poses[0], [](Pose a, std::pair<unsigned int, Pose> b)
+    meanPose = std::accumulate(std::next(poses.begin()), poses.end(), poses[0], [](Pose a, std::pair<unsigned int, Pose> b)
     {
         return Pose(a.position + b.second.position, a.angle + b.second.angle);
     });
+    meanPose.position.x /= count;
+    meanPose.position.y /= count;
+    meanPose.angle /= count;
     return meanPose;
 }
 
@@ -244,9 +246,9 @@ void Navigator::CalibrateSymmetricMap()
     for(auto &wall : map)
     {
         Segment &seg = wall.second;
-        seg.start.x = seg.start.x / abs(seg.start.x) * realX / 2;
-        seg.end.x = seg.end.x / abs(seg.end.x) * realX / 2;
-        seg.start.y = seg.start.y / abs(seg.start.y) * realY / 2;
-        seg.end.y = seg.end.y / abs(seg.end.y) * realY / 2;
+        seg.start.x = seg.start.x / std::abs(seg.start.x) * realX / 2;
+        seg.end.x = seg.end.x / std::abs(seg.end.x) * realX / 2;
+        seg.start.y = seg.start.y / std::abs(seg.start.y) * realY / 2;
+        seg.end.y = seg.end.y / std::abs(seg.end.y) * realY / 2;
     }
 }

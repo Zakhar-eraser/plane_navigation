@@ -19,6 +19,8 @@ bool rightUpdated = false;
 bool backUpdated = false;
 bool angleUpdated = false;
 
+bool calibrated;
+
 Navigator *nav;
 
 ros::Publisher dataPub;
@@ -93,7 +95,6 @@ int main(int argc, char **argv)
 
     nav = new Navigator("../../plane_navigation/config/map.yaml", scans);
     nav->SetLastPose(Pose(initPose["x"].as<float>(), initPose["y"].as<float>(), initPose["yaw"].as<float>()));
-
     // nav.StartNavigator();
     Pose lastPose;
     while(ros::ok())
@@ -102,6 +103,11 @@ int main(int argc, char **argv)
            (rightUpdated || !scans->rightLaser.isOn) &&  (backUpdated || !scans->backLaser.isOn) && angleUpdated)
         {
             nav->isUpdate = true;
+            if(!calibrated)
+            {
+                nav->CalibrateSymmetricMap();
+                calibrated = true;
+            }
             nav->CalculatePose();
             lastPose = nav->GetPose();
             data.header.stamp = ros::Time::now();
