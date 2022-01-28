@@ -1,21 +1,59 @@
 #ifndef NAV_STRUCTS
 #define NAV_STRUCTS
-struct Pose
+
+#include <utility>
+using pair = std::pair<float, float>;
+
+struct Position
 {
     float x = 0.0f;
     float y = 0.0f;
+
+    Position();
+    Position(pair position);
+    Position(float x, float y);
+    Position &operator=(pair position);
+    Position operator+(Position pos);
+    Position operator-(Position pos);
+};
+
+struct Pose
+{
+    Position position;
     float angle = 0.0f;
 
     Pose();
     Pose(float x, float y, float angle);
+    Pose(Position position, float angle);
+};
+
+struct LaserData
+{
+    float range;
+    Position offsets;
+    bool isOn;
+
+    LaserData();
+    LaserData(float range, float x, float y, bool isOn);
+    LaserData(float range, Position offsets, bool isOn);
 };
 
 struct SensorScans
 {
-    float left = 0.0f;
-    float right = 0.0f;
-    float front = 0.0f;
-    float back = 0.0f;
-    float angle = 0.0f;
+    LaserData leftLaser;
+    LaserData rightLaser;
+    LaserData frontLaser;
+    LaserData backLaser;
+    float yaw = 0.0f;
+    float pitch = 0.0f;
+    float roll = 0.0f;
+};
+
+enum LaserPair
+{
+    LEFT_FRONT,
+    FRONT_RIGHT,
+    RIGHT_BACK,
+    BACK_LEFT
 };
 #endif

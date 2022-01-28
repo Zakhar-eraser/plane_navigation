@@ -1,14 +1,13 @@
-#ifndef SEGMENT
-#define SEGMENT
+#ifndef PLANE_NAVIGATION
+#define PLANE_NAVIGATION
 #include <utility>
 #include <vector>
 #include <map>
 #include <cmath>
 #include <limits>
 #include <thread>
-#include <NavigationStructs.hpp>
-
-class Segment;
+#include "Segment.hpp"
+using string = std::string;
 
 class Navigator
 {
@@ -16,44 +15,35 @@ private:
     std::thread navigatorThread;
     bool threadStop;
     float sleepTime;
-
     std::map<std::string, Segment> map;
     std::map<std::string, Segment> transformedMap;
-
-    std::vector<float> linkedPoses;
-    std::vector<Pose> poses;
+    std::map<unsigned int, Pose> poses;
+    std::vector<Pose> lastPoses;
+    std::vector<Pose> pairPoses;
     SensorScans *scans = nullptr;
-    void CalculatePose();
+    Pose lastPose;
     void ThreadLoop();
-    void CalculationCycle(std::string passingId, float length, std::pair<float, float> transform);
-    void TransformedMap(std::pair<float, float> start, float angle);
+    //Filters
+    Pose GetMinDiversePose(Pose initPos);
+    Pose GetSlowestPose(Pose lastPose);
+    Pose GetMeanPosition();
+    //Transforms
+    void TransformMap(Position start);
+    void RotateMap(float angle);
+
     void SetNavigatorState(bool stop);
+    void CalibrateSymmetricMap();
+    void CalculatePosesByFrontWall(float axisDir, float wallAngle, string frontWallId,
+                                          LaserData rotatedLeft, LaserData rotatedFront, float roll, float pitch);
+    void CalculatePosesByAngleWall(float axisDir, float wallAngle, LaserData rotatedLeft, LaserData rotatedFront, float roll, float pitch);
+    void CalculatePoseByLaserPair(float axisDir, unsigned int pair, float roll, float pitch, LaserData left, LaserData front);
 public:
+    bool isUpdate;
     Navigator(std::string configPath, SensorScans *scans);
     ~Navigator();
     void StartNavigator();
-    Pose GetMinDiversePosition(Pose initPos);
+    void CalculatePose();
+    void SetLastPose(Pose pose);
+    Pose GetPose();
 };
-
-class Segment
-{
-    private:
-        std::pair<float, float> start;
-        std::pair<float, float> end;
-        std::pair<float, float> normal;
-        Segment TransformLine(float angle, std::pair<float, float> start);
-        Segment GetLineWithOffset(float offset);
-        friend float GetPositionByWall(Segment wall, float distance, std::pair<float, float> vec);
-        std::map<std::string, Segment> TransformedMap(std::map<std::string, Segment> &map, float angle);
-        bool NotInRange(std::pair<float, float> pos);
-    public:
-        Segment();
-        Segment(std::pair<float, float> point1, std::pair<float, float> point2, float angle);
-        Segment(std::pair<float, float> point1, std::pair<float, float> point2, std::pair<float, float> normal);
-        friend class Navigator;
-};
-
-float GetRotationAngle(std::pair<float, float> curNormal, std::pair<float, float> goalNormal);
-
-std::pair<float, float> Transform(std::pair<float, float> pointInRelated, float angleInWorld);
 #endif
