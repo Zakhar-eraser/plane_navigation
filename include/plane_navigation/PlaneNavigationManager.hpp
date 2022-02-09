@@ -34,7 +34,7 @@ class PlaneNavigationManager
 		void updatePose();
 		std::vector<float> getEstimatedPose();
 		void setRange(float right, float left, float front, float back);
-		void setYaw(float yaw);
+		void setOrientation(float yaw, float pitch, float roll);
 		
 };
 

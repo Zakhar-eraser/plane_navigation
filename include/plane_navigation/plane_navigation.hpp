@@ -18,7 +18,7 @@ private:
     std::map<std::string, Segment> map;
     std::map<std::string, Segment> transformedMap;
     std::map<unsigned int, Pose> poses;
-    std::vector<Pose> lastPoses;
+    std::vector<Pose> lastPoses = std::vector<Pose>(4);
     std::vector<Pose> pairPoses;
     SensorScans *scans = nullptr;
     Pose lastPose;
@@ -32,7 +32,6 @@ private:
     void RotateMap(float angle);
 
     void SetNavigatorState(bool stop);
-    void CalibrateSymmetricMap();
     void CalculatePosesByFrontWall(float axisDir, float wallAngle, string frontWallId,
                                           LaserData rotatedLeft, LaserData rotatedFront, float roll, float pitch);
     void CalculatePosesByAngleWall(float axisDir, float wallAngle, LaserData rotatedLeft, LaserData rotatedFront, float roll, float pitch);
@@ -41,6 +40,7 @@ public:
     bool isUpdate;
     Navigator(std::string configPath, SensorScans *scans);
     ~Navigator();
+    void CalibrateSymmetricMap();
     void StartNavigator();
     void CalculatePose();
     void SetLastPose(Pose pose);

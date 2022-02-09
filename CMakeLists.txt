@@ -22,9 +22,14 @@ target_link_libraries( grabber
   ${catkin_LIBRARIES}
   rangefinder_manager_lib
   navigation
+  ${CMAKE_THREAD_LIBS_INIT}
 )
 
 add_executable(yaw src/test.cpp)
 target_link_libraries(yaw
   ${catkin_LIBRARIES}
+  ${CMAKE_THREAD_LIBS_INIT}
 )
+
+add_executable(roomMeter src/roomMeter.cpp)
+target_link_libraries(roomMeter rangefinder_manager_lib yaml-cpp ${CMAKE_THREAD_LIBS_INIT})

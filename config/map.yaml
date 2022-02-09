@@ -1,17 +1,17 @@
 lines:
-    line1:
-        start: [-3,-3]
-        end: [-3, 3]
-        angle: 0
-    line2:
-        start: [-3, 3]
-        end: [3, 3]
-        angle: 4.7123889804
-    line3:
-        start: [3, 3]
-        end: [3, -3]
-        angle: 3.14159265359
-    line4:
-        start: [3, -3]
-        end: [-3, -3]
-        angle: 1.57079632679
+  line1: 
+    start: [-3.045, -2.44]
+    end: [-3.045, 2.44]
+    angle: 0
+  line2: 
+    start: [-3.045, 2.44]
+    end: [3.045, 2.44]
+    angle: 4.71239
+  line3: 
+    start: [3.045, 2.44]
+    end: [3.045, -2.44]
+    angle: 3.14159
+  line4: 
+    start: [3.045, -2.44]
+    end: [-3.045, -2.44]
+    angle: 1.5708

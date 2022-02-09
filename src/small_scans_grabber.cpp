@@ -21,6 +21,8 @@ bool rightUpdated = false;
 bool backUpdated = false;
 bool angleUpdated = false;
 
+bool calibrated = true;
+
 Navigator *nav;
 
 ros::Publisher dataPub;
@@ -95,11 +97,11 @@ int main(int argc, char **argv)
 
     RangefinderManager* rfManager = RangefinderManager::GetInstance();
 	
-	rfManager->addSensorAddress(0x10);
-	rfManager->addSensorAddress(0x11);
-	rfManager->addSensorAddress(0x12);
-	rfManager->addSensorAddress(0x13);
-    rfManager->startRecive();
+	rfManager->addSensorAddress(0x60, SensorTypes::GARMIN_LIDAR); // left
+	rfManager->addSensorAddress(0x62, SensorTypes::GARMIN_LIDAR); // right
+	rfManager->addSensorAddress(0x10, SensorTypes::BENEWAKE_LIDAR); // back
+	rfManager->addSensorAddress(0x12, SensorTypes::BENEWAKE_LIDAR); // front
+	rfManager->startRecive();
     // rfManager->addSensorAddress(0x14);
     //frontSub = n->subscribe<sensor_msgs::Range>(topicsNode["range_front_topic"].as<std::string>(), 1, RangeCallback);
     //leftSub = n->subscribe<sensor_msgs::Range>(topicsNode["range_left_topic"].as<std::string>(), 1, RangeCallback);
@@ -109,23 +111,22 @@ int main(int argc, char **argv)
 
     ros::Rate rate(20);
 
-    nav = new Navigator("../../plane_navigation/config/map.yaml", scans);
-    nav->SetLastPose(Pose(initPose["x"].as<float>(), initPose["y"].as<float>(), initPose["yaw"].as<float>()));
-    Pose lastPose;
-
-    // nav.StartNavigator();
-
     std::vector<float> rangesList;
 
+    nav = new Navigator("../../plane_navigation/config/map.yaml", scans);
+    nav->SetLastPose(Pose(initPose["x"].as<float>(), initPose["y"].as<float>(), initPose["yaw"].as<float>()));
+    // nav.StartNavigator();
+    Pose lastPose;
     while(ros::ok())
     {
         if(angleUpdated)
         {
             rangesList = rfManager->getDistanceList();
-            scans->leftLaser.range = rangesList[1];
-            scans->frontLaser.range = rangesList[0];
-            scans->rightLaser.range = rangesList[3];
+            scans->leftLaser.range = rangesList[0];
+            scans->frontLaser.range = rangesList[3];
+            scans->rightLaser.range = rangesList[1];
             nav->isUpdate = true;
+            if(!calibrated) {nav->CalibrateSymmetricMap(); calibrated = true;}
             nav->CalculatePose();
             lastPose = nav->GetPose();
             data.header.stamp = ros::Time::now();

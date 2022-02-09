@@ -26,8 +26,10 @@ void PlaneNavigationManager::setRange(float right, float left, float front, floa
 	scans_->rightLaser.range = right;
 }
 
-void PlaneNavigationManager::setYaw(float yaw)
+void PlaneNavigationManager::setOrientation(float yaw, float pitch, float roll)
 {
+	scans_->pitch = pitch;
+	scans_->roll = roll;
 	scans_->yaw = yaw;
 }
 
@@ -61,6 +63,7 @@ PlaneNavigationManager::PlaneNavigationManager(/* args */)
 	lastPose_ = Pose(initPose["x"].as<float>(), initPose["y"].as<float>(), initPose["yaw"].as<float>());
     nav_ = new Navigator("../plane_navigation/config/map.yaml", scans_);
 	nav_->SetLastPose(lastPose_);
+	//nav_->CalibrateSymmetricMap();
 	estimatedPose_ = {0,0,0};
 }
 
