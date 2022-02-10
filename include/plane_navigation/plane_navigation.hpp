@@ -6,45 +6,47 @@
 #include <cmath>
 #include <limits>
 #include <thread>
-#include <NavigationStructs.hpp>
 #include "Segment.hpp"
-using pair = std::pair<float, float>;
 using string = std::string;
 
 class Navigator
 {
 private:
-    bool frontUpdated;
-    bool backUpdated;
-    bool leftUpdated;
-    bool rightUpdated;
-    bool angleUpdated;
+    //Constants
+    const float angAllow = 10.0f;
+
     std::thread navigatorThread;
     bool threadStop;
     float sleepTime;
     std::map<std::string, Segment> map;
     std::map<std::string, Segment> transformedMap;
-    Switcher switcher;
-    std::vector<pair> linkedPoses;
-    std::vector<Pose> poses;
+    std::map<unsigned int, Pose> poses;
+    std::vector<Pose> lastPoses = std::vector<Pose>(4);
+    std::vector<Pose> pairPoses;
     SensorScans *scans = nullptr;
-    Offsets laserOffsets;
+    Pose lastPose;
     void ThreadLoop();
-    void CalculationCycle(bool switcher, pair mapStart, pair startInRelated, float otherRange,
-                                 pair transform, pair laserDir, float yaw, float mapAngle);
-    void TransformMap(pair start);
-    void RotateMap(float angle);
+    //Filters
+    Pose GetMinDiversePose(Pose initPos);
+    Pose GetSlowestPose(Pose lastPose);
+    Pose GetMeanPosition();
+    //Transforms
+    void TransformMap(Position start);
+    void RotateMap(float angle); 
+
     void SetNavigatorState(bool stop);
-    void CalibrateMap(string wallId, float absYaw);
-    void ReturnPose(float yaw, float wallAngle, pair oldCenter);
+    void CalculatePosesByFrontWall(float axisDir, float wallAngle, string frontWallId,
+                                          LaserData rotatedLeft, LaserData rotatedFront, float roll, float pitch);
+    void CalculatePosesByAngleWall(float axisDir, float wallAngle, LaserData rotatedLeft, LaserData rotatedFront, float roll, float pitch);
+    void CalculatePoseByLaserPair(float axisDir, unsigned int pair, float roll, float pitch, LaserData left, LaserData front);
 public:
     bool isUpdate;
-    Navigator(std::string configPath, SensorScans *scans, Switcher switcher, Offsets offsets);
+    Navigator(std::string configPath, SensorScans *scans);
     ~Navigator();
+    void CalibrateSquareMap();
     void StartNavigator();
-    void CalculatePoses();
-    void CalculatePosesByWall(string wallId, float yaw);
-    Pose GetMinDiversePosition(Pose initPos);
-    Pose GetMeanPosition();
+    void CalculatePose();
+    void SetLastPose(Pose pose);
+    Pose GetPose();
 };
 #endif

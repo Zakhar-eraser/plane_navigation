@@ -1,55 +1,70 @@
 #include "NavigationStructs.hpp"
 
-Switcher::Switcher(){}
-
-Switcher::Switcher(bool left, bool right, bool back)
-{
-    this->back = back;
-    this->left = left;
-    this->right = right;
-}
-
-Pose &Pose::operator=(pair position)
+Position &Position::operator=(pair position)
 {
     x = position.first;
     y = position.second;
     return *this;
 }
 
-Offsets::Offsets(pair front, pair back, pair left, pair right)
-{
-    this->front = front;
-    this->back = back;
-    this->left = left;
-    this->right = right;
-}
+Position::Position(){}
 
-Pose::Pose(){}
-Offsets::Offsets(){}
-
-Pose::Pose(float x, float y, float angle)
+Position::Position(float x, float y)
 {
     this->x = x;
     this->y = y;
-    this->angle = angle;
 }
 
-Pose::Pose(pair position)
+Position::Position(pair position)
 {
     this->x = position.first;
     this->y = position.second;
 }
 
-Pose& Pose::operator+(Pose& pose)
+Position Position::operator+(Position pos)
 {
-    this->x += pose.x;
-    this->y += pose.y;
-    return *this;
+    Position newPos(*this);
+    newPos.x += pos.x;
+    newPos.y += pos.y;
+    return newPos;
 }
 
-Pose& Pose::operator-(Pose& pose)
+Position Position::operator-(Position pos)
 {
-    this->x -= pose.x;
-    this->y -= pose.y;
-    return *this;
+    Position newPos(*this);
+    newPos.x -= pos.x;
+    newPos.y -= pos.y;
+    return newPos;
+}
+
+LaserData::LaserData(){}
+
+LaserData::LaserData(float range, float x, float y, bool isOn)
+{
+    this->range = range;
+    offsets.x = x;
+    offsets.y = y;
+    this->isOn = isOn;
+}
+
+LaserData::LaserData(float range, Position offsets, bool isOn)
+{
+    this->range = range;
+    this->offsets = offsets;
+    this->isOn = isOn;
+}
+
+Pose::Pose(){}
+
+Pose::Pose(float x, float y, float angle)
+{
+    position.x = x;
+    position.y = y;
+    this->angle = angle;
+}
+
+Pose::Pose(Position position, float angle)
+{
+    this->position = position;
+    this->angle = angle;
 }

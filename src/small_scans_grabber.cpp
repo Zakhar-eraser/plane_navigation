@@ -19,6 +19,8 @@ bool rightUpdated = false;
 bool backUpdated = false;
 bool angleUpdated = false;
 
+bool calibrated;
+
 Navigator *nav;
 
 ros::Publisher dataPub;
@@ -29,25 +31,23 @@ YAML::Node frameIds;
 
 SensorScans *scans;
 
-Switcher switcher;
-
 void RangeCallback(sensor_msgs::RangeConstPtr msg)
 {
     if(msg->header.frame_id == frameIds["front_id"].as<std::string>())
     {
-        scans->front = msg->range;
+        scans->frontLaser.range = msg->range;
         frontUpdated = true;
     }else if(msg->header.frame_id == frameIds["left_id"].as<std::string>())
     {
-        scans->left = msg->range;
+        scans->leftLaser.range = msg->range;
         leftUpdated = true;
     }else if(msg->header.frame_id == frameIds["right_id"].as<std::string>())
     {
-        scans->right = msg->range;
+        scans->rightLaser.range = msg->range;
         rightUpdated = true;
     }else
     {
-        scans->back = msg->range;
+        scans->backLaser.range = msg->range;
         backUpdated = true;
     }
 }
@@ -56,18 +56,6 @@ void AngleCallback(std_msgs::Float32ConstPtr msg)
 {
     scans->yaw = msg->data;
     angleUpdated = true;
-    //if(frontUpdated && (leftUpdated || !switcher.left) && (rightUpdated || !switcher.right) &&  (backUpdated || !switcher.back))
-    //{
-    //    //nav.isUpdate = true;
-    //    nav->CalculatePoses();
-    //    data.header.stamp = ros::Time::now();
-    //    *lastPose = nav->GetMinDiversePosition(*lastPose);
-    //    data.pose.position.x = lastPose->x;
-    //    data.pose.position.y = lastPose->y;
-    //    data.pose.orientation.x = lastPose->angle;
-    //    dataPub.publish(data);
-    //    backUpdated = frontUpdated = leftUpdated = rightUpdated = false;
-    //}
 }
 
 int main(int argc, char **argv)
@@ -76,15 +64,20 @@ int main(int argc, char **argv)
     n = new ros::NodeHandle();
     scans = new SensorScans();
 
-    //geometry_msgs::PoseStamped data;
     //Node with topic paths
     YAML::Node topicsNode = YAML::LoadFile("../../plane_navigation/config/topics.yaml");
     //What sensors must be accounted. Read from a yaml file and write the data to a Switcher structur
     YAML::Node switcherNode = YAML::LoadFile("../../plane_navigation/config/sensor_switcher.yaml");
-    switcher = Switcher(switcherNode["use_left"].as<bool>(), switcherNode["use_right"].as<bool>(), switcherNode["use_back"].as<bool>());
+    scans->leftLaser.isOn = switcherNode["use_left"].as<bool>();
+    scans->rightLaser.isOn = switcherNode["use_right"].as<bool>();
+    scans->backLaser.isOn = switcherNode["use_back"].as<bool>();
+    scans->frontLaser.isOn = switcherNode["use_front"].as<bool>();
     //Sensors offsets. Read from a yaml file and write the data to a Offsets structure
     YAML::Node sensorTfNode = YAML::LoadFile("../../plane_navigation/config/sensors_tf.yaml");
-    Offsets sensorsTf(sensorTfNode["front"].as<pair>(), sensorTfNode["back"].as<pair>(), sensorTfNode["left"].as<pair>(), sensorTfNode["right"].as<pair>());
+    scans->leftLaser.offsets = sensorTfNode["left"].as<pair>();
+    scans->rightLaser.offsets = sensorTfNode["right"].as<pair>();
+    scans->backLaser.offsets = sensorTfNode["back"].as<pair>();
+    scans->frontLaser.offsets = sensorTfNode["front"].as<pair>();
     //Read what lasers frame ids to expect
     frameIds = YAML::LoadFile("../../plane_navigation/config/sensors_frame_id.yaml");
     //Read initial pose of drone
@@ -98,25 +91,28 @@ int main(int argc, char **argv)
     backSub = n->subscribe<sensor_msgs::Range>(topicsNode["range_back_topic"].as<std::string>(), 1, RangeCallback);
     angleSub = n->subscribe<std_msgs::Float32>(topicsNode["yaw_topic"].as<std::string>(), 1, AngleCallback);
 
-
     ros::Rate rate(20);
 
-    Pose lastPose(initPose["x"].as<float>(), initPose["y"].as<float>(), 0);
-
-    nav = new Navigator("../../plane_navigation/config/map.yaml", scans, switcher, sensorsTf);
-
+    nav = new Navigator("../../plane_navigation/config/map.yaml", scans);
+    nav->SetLastPose(Pose(initPose["x"].as<float>(), initPose["y"].as<float>(), initPose["yaw"].as<float>()));
     // nav.StartNavigator();
-
+    Pose lastPose;
     while(ros::ok())
     {
-        if(frontUpdated && (leftUpdated || !switcher.left) && (rightUpdated || !switcher.right) &&  (backUpdated || !switcher.back) && angleUpdated)
+        if((frontUpdated || !scans->frontLaser.isOn) && (leftUpdated || !scans->leftLaser.isOn) &&
+           (rightUpdated || !scans->rightLaser.isOn) &&  (backUpdated || !scans->backLaser.isOn) && angleUpdated)
         {
             nav->isUpdate = true;
-            nav->CalculatePoses();
+            if(!calibrated)
+            {
+                nav->CalibrateSymmetricMap();
+                calibrated = true;
+            }
+            nav->CalculatePose();
+            lastPose = nav->GetPose();
             data.header.stamp = ros::Time::now();
-            lastPose = nav->GetMinDiversePosition(lastPose);
-            data.pose.position.x = lastPose.x;
-            data.pose.position.y = lastPose.y;
+            data.pose.position.x = lastPose.position.x;
+            data.pose.position.y = lastPose.position.y;
             data.pose.orientation.x = lastPose.angle;
             dataPub.publish(data);
             angleUpdated = backUpdated = frontUpdated = leftUpdated = rightUpdated = false;
