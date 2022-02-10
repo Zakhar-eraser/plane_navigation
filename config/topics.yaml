@@ -1,7 +1,3 @@
-range_front_topic: '/range_front_right'
-range_left_topic: '/range_left'
-range_right_topic: '/range_right'
-range_back_topic: '/range_back'
-yaw_topic: '/yaw'
+yaw_topic: '/camera/odom/sample'
 
-pose_topic: '/estimated_pose'
+pose_topic: '/mavros/vision_pose/pos'

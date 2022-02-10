@@ -32,6 +32,7 @@ void Navigator::TransformMap(Position start)
 Navigator::Navigator(string configPath, SensorScans *scans)
 {
     sleepTime = 1.0f / CONTROLLER_LOOP_RATE;
+    lastPoses.reserve(4);
     this->scans = scans;
     isUpdate = false;
     YAML::Node node = YAML::LoadFile(configPath)["lines"];
