@@ -1,3 +1,0 @@
-yaw_topic: '/camera/odom/sample'
-
-pose_topic: '/mavros/vision_pose/pos'

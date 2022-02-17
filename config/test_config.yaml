@@ -1,0 +1,17 @@
+front:
+  is_on: true
+  offsets: [0.71, 0.71]
+  range: 2.83
+right:
+  is_on: true
+  offsets: [1.41, -1.41]
+  range: 7.07
+left:
+  is_on: false
+  offsets: [1.41, -1.41]
+  range: 7.07
+back:
+  is_on: false
+  offsets: [1.41, -1.41]
+  range: 7.07
+yaw: 0.785

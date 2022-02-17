@@ -37,33 +37,36 @@ void PlaneNavigationManager::updatePose()
 {
 	nav_->isUpdate = true;
 	nav_->CalculatePose();
-	lastPose_ = nav_->GetPose();
-	estimatedPose_[0] = lastPose_.position.x;
-	estimatedPose_[1] = lastPose_.position.y;
-	estimatedPose_[2] = lastPose_.angle;
+	Pose lastPose = nav_->GetPose();
+	estimatedPose_[0] = lastPose.position.x;
+	estimatedPose_[1] = lastPose.position.y;
+	estimatedPose_[2] = lastPose.angle;
 }
 
 
 PlaneNavigationManager::PlaneNavigationManager(/* args */)
 {
 	scans_ = new SensorScans();
-	YAML::Node sensorTfNode = YAML::LoadFile("../plane_navigation/config/sensors_tf.yaml");
-	YAML::Node switcherNode = YAML::LoadFile("../plane_navigation/config/sensor_switcher.yaml");
-	YAML::Node initPose = YAML::LoadFile("../plane_navigation/config/initial_pose.yaml");
+	YAML::Node robotConfig = YAML::LoadFile("../plane_navigation/config/robot_config.yaml");
+	YAML::Node leftConfig = robotConfig["left"];
+	YAML::Node rightConfig = robotConfig["right"];
+	YAML::Node frontConfig = robotConfig["front"];
+	YAML::Node backConfig = robotConfig["back"];
+	std::string offsets = "offsets";
+	std::string isOn = "is_on";
 
-	scans_->leftLaser.isOn = switcherNode["use_left"].as<bool>();
-	scans_->rightLaser.isOn = switcherNode["use_right"].as<bool>();
-	scans_->backLaser.isOn = switcherNode["use_back"].as<bool>();
-	scans_->frontLaser.isOn = switcherNode["use_front"].as<bool>();
-	scans_->leftLaser.offsets = sensorTfNode["left"].as<pair>();
-	scans_->rightLaser.offsets = sensorTfNode["right"].as<pair>();
-	scans_->backLaser.offsets = sensorTfNode["back"].as<pair>();
-	scans_->frontLaser.offsets = sensorTfNode["front"].as<pair>();
+	scans_->leftLaser.isOn = leftConfig[isOn].as<bool>();
+	scans_->rightLaser.isOn = rightConfig[isOn].as<bool>();
+	scans_->backLaser.isOn = backConfig[isOn].as<bool>();
+	scans_->frontLaser.isOn = frontConfig[isOn].as<bool>();
+	scans_->leftLaser.offsets = leftConfig[offsets].as<pair>();
+	scans_->rightLaser.offsets = rightConfig[offsets].as<pair>();
+	scans_->backLaser.offsets = backConfig[offsets].as<pair>();
+	scans_->frontLaser.offsets = frontConfig[offsets].as<pair>();
 						 
-	lastPose_ = Pose(initPose["x"].as<float>(), initPose["y"].as<float>(), initPose["yaw"].as<float>());
     nav_ = new Navigator("../plane_navigation/config/map.yaml", scans_);
-	nav_->SetLastPose(lastPose_);
-	//nav_->CalibrateSymmetricMap();
+	Position initPos(YAML::Load("../plane_navigation/config/map.yaml")["initial_pose"].as<pair>());
+	nav_->SetLastPose(Pose(initPos, 0));
 	estimatedPose_ = {0,0,0};
 }
 

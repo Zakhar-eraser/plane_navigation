@@ -1,0 +1,15 @@
+yaw_topic: '/yaw'
+
+pose_topic: '/estimated_pose'
+
+front_id: 'range_front_right'
+front_topic: '/range_front_right'
+
+back_id: 'range_back'
+back_topic: '/range_back'
+
+left_id: 'range_left'
+left_topic: '/range_left'
+
+right_id: 'range_right'
+right_topic: '/range_right'

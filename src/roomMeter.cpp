@@ -16,11 +16,11 @@ int main(int argc, char **argv)
     }else path += "map.yaml";
     std::ofstream mapFile(path);
 
-    YAML::Node offsets = YAML::LoadFile("../../plane_navigation/config/sensors_tf.yaml");
-    pair leftOs = offsets["left"].as<pair>();
-    pair rightOs = offsets["right"].as<pair>();
-    pair frontOs = offsets["front"].as<pair>();
-    pair backOs = offsets["back"].as<pair>();
+    YAML::Node lasersConfig = YAML::LoadFile("../../plane_navigation/config/robot_config.yaml");
+    pair leftOs = lasersConfig["left"]["offsets"].as<pair>();
+    pair rightOs = lasersConfig["right"]["offsets"].as<pair>();
+    pair frontOs = lasersConfig["front"]["offsets"].as<pair>();
+    pair backOs = lasersConfig["back"]["offsets"].as<pair>();
 
     RangefinderManager* rfManager = RangefinderManager::GetInstance();
     rfManager->addSensorAddress(0x60, SensorTypes::GARMIN_LIDAR); // left
@@ -50,27 +50,35 @@ int main(int argc, char **argv)
     }
     x /= 2;
     y /= 2;
-    mapFile << "lines:\n";
+    YAML::Emitter emitter(mapFile);
+    emitter << YAML::BeginMap;
+    emitter << YAML::Key << "lines" << YAML::Value;
+    emitter << YAML::BeginMap;
     //Line1 description
-    mapFile << "  line1: \n";
-    mapFile << "    start: [" << -x << ", " << -y << "]\n";
-    mapFile << "    end: [" << -x << ", " << y << "]\n";
-    mapFile << "    angle: " << 0 << std::endl;
+    emitter << YAML::Key << "line1" << YAML::Value << YAML::BeginMap;
+    emitter << YAML::Key << "start" << YAML::Value << YAML::Flow << YAML::BeginSeq << -x << -y << YAML::EndSeq;
+    emitter << YAML::Key << "end" << YAML::Value << YAML::Flow << YAML::BeginSeq << -x << y << YAML::EndSeq;
+    emitter << YAML::Key << "angle" << YAML::Value << 0 << YAML::EndMap;
     //Line2 description
-    mapFile << "  line2: \n";
-    mapFile << "    start: [" << -x << ", " << y << "]\n";
-    mapFile << "    end: [" << x << ", " << y << "]\n";
-    mapFile << "    angle: " << 4.7123889804 << std::endl;
+    emitter << YAML::Key << "line2" << YAML::Value << YAML::BeginMap;
+    emitter << YAML::Key << "start" << YAML::Value << YAML::Flow << YAML::BeginSeq << -x << y << YAML::EndSeq;
+    emitter << YAML::Key << "end" << YAML::Value << YAML::Flow << YAML::BeginSeq << x << y << YAML::EndSeq;
+    emitter << YAML::Key << "angle" << YAML::Value << 4.71239f << YAML::EndMap;
     //Line3 description
-    mapFile << "  line3: \n";
-    mapFile << "    start: [" << x << ", " << y << "]\n";
-    mapFile << "    end: [" << x << ", " << -y << "]\n";
-    mapFile << "    angle: " << 3.14159265359 << std::endl;
+    emitter << YAML::Key << "line3" << YAML::Value << YAML::BeginMap;
+    emitter << YAML::Key << "start" << YAML::Value << YAML::Flow << YAML::BeginSeq << x << y << YAML::EndSeq;
+    emitter << YAML::Key << "end" << YAML::Value << YAML::Flow << YAML::BeginSeq << x << -y << YAML::EndSeq;
+    emitter << YAML::Key << "angle" << YAML::Value << 3.14159f << YAML::EndMap;
     //Line4 description
-    mapFile << "  line4: \n";
-    mapFile << "    start: [" << x << ", " << -y << "]\n";
-    mapFile << "    end: [" << -x << ", " << -y << "]\n";
-    mapFile << "    angle: " << 1.57079632679 << std::endl;
+    emitter << YAML::Key << "line4" << YAML::Value << YAML::BeginMap;
+    emitter << YAML::Key << "start" << YAML::Value << YAML::Flow << YAML::BeginSeq << x << -y << YAML::EndSeq;
+    emitter << YAML::Key << "end" << YAML::Value << YAML::Flow << YAML::BeginSeq << -x << -y << YAML::EndSeq;
+    emitter << YAML::Key << "angle" << YAML::Value << 1.5708f << YAML::EndMap;
+    emitter << YAML::EndMap;
+    emitter << YAML::Key << "initial_pose" << YAML::Value;
+    emitter << YAML::Flow << YAML::BeginSeq << -x + scans->leftLaser.range + scans->leftLaser.offsets.x <<
+                                               -y + scans->frontLaser.range + scans->frontLaser.offsets.y << YAML::EndSeq;
+    emitter << YAML::EndMap;
     mapFile.close();
     return 0;
 }

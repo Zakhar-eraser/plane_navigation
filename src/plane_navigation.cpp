@@ -5,8 +5,6 @@
 #include <unistd.h>
 #include <iostream>
 
-#define CONTROLLER_LOOP_RATE 30
-
 void Navigator::SetLastPose(Pose pose)
 {
     lastPose = pose;
@@ -29,12 +27,9 @@ void Navigator::TransformMap(Position start)
     }
 }
 
-Navigator::Navigator(string configPath, SensorScans *scans)
+void Navigator::WriteMap()
 {
-    sleepTime = 1.0f / CONTROLLER_LOOP_RATE;
-    lastPoses.reserve(4);
-    this->scans = scans;
-    isUpdate = false;
+    map.clear();
     YAML::Node node = YAML::LoadFile(configPath)["lines"];
     for(YAML::const_iterator i = node.begin(); i != node.end(); ++i)
     {
@@ -44,34 +39,23 @@ Navigator::Navigator(string configPath, SensorScans *scans)
         float angle = i->second["angle"].as<float>();
         map[key] = Segment(start, end, angle);
     }
+    std::pair<float, float> initialPose = YAML::LoadFile(configPath)["initial_pose"].as<std::pair<float, float>>();
+    lastPose.position.x = initialPose.first;
+    lastPose.position.y = initialPose.second;
+}
+
+Navigator::Navigator(string configPath, SensorScans *scans)
+{
+    lastPoses.reserve(4);
+    this->configPath = configPath;
+    this->scans = scans;
+    //isUpdate = false;
+    WriteMap();
 }
 
 Navigator::~Navigator()
 {
-    threadStop = true;
-    navigatorThread.join();
-}
-
-void Navigator::StartNavigator()
-{
-    navigatorThread = std::thread(&Navigator::ThreadLoop, this);
-}
-
-void Navigator::SetNavigatorState(bool stop)
-{
-    threadStop = stop;
-}
-
-void Navigator::ThreadLoop()
-{
-    while(!threadStop)
-    {
-        //if (isUpdate)
-        //{
-        //    CalculatePoses();
-        //}
-        usleep(sleepTime * 1e6);
-    }
+   
 }
 
 Pose Navigator::GetPose()
@@ -89,9 +73,9 @@ Pose Navigator::GetSlowestPose(Pose lastPose)
     for(auto &pose : poses)
     {
         d1 = pose.second.position - lastPoses[pose.first].position;
-        d2 = pose.second.position - lastPose.position;
-        dif = (d1.x * d1.x + d1.y * d1.y) + (d2.x * d2.x + d2.y * d2.y);
-        if(dif < lastDif)
+        //d2 = pose.second.position - lastPose.position;
+        dif = (d1.x * d1.x + d1.y * d1.y)/* + (d2.x * d2.x + d2.y * d2.y)*/;
+        if(dif < lastDif && dif < speedAllow)
         {
             lastDif = dif;
             slowestPose = pose.second;
@@ -240,9 +224,54 @@ Pose Navigator::GetMeanPosition()
     return meanPose;
 }
 
-void Navigator::CalibrateSquareMap()
+void Navigator::WriteYAMLMap()
 {
-    map.clear();
-    float realX = scans->leftLaser.range + scans->rightLaser.range - scans->leftLaser.offsets.x + scans->rightLaser.offsets.x;
-    float realY = scans->frontLaser.range + scans->backLaser.range - scans->backLaser.offsets.y + scans->frontLaser.offsets.y;
+    std::ofstream mapFile(configPath);
+    YAML::Emitter emitter(mapFile);
+    emitter << YAML::BeginMap;
+    emitter << YAML::Key << "lines" << YAML::Value;
+    emitter << YAML::BeginMap;
+    for(auto &wallPair : map)
+    {
+        Segment &wall = wallPair.second;
+        emitter << YAML::Key << wallPair.first << YAML::Value << YAML::BeginMap;
+        emitter << YAML::Key << "start" << YAML::Value << YAML::Flow << YAML::BeginSeq <<
+                    wall.start.x << wall.start.y << YAML::EndSeq;
+        emitter << YAML::Key << "end" << YAML::Value << YAML::Flow << YAML::BeginSeq <<
+                    wall.end.x << wall.end.y << YAML::EndSeq;
+        emitter << YAML::Key << "angle" << YAML::Value << wall.angle << YAML::EndMap;
+    }
+    emitter << YAML::EndMap;
+    emitter << YAML::Key << "initial_pose" << YAML::Value;
+    emitter << YAML::Flow << YAML::BeginSeq << lastPose.position.x <<
+                                               lastPose.position.y << YAML::EndSeq;
+    emitter << YAML::EndMap;
+    mapFile.close();
+}
+
+void Navigator::CalibrateHall(string frontWall)
+{
+    Segment wall = map[frontWall];
+    float angle = - wall.angle + M_PI_2;
+    float c = cos(scans->yaw);
+    float x = (scans->leftLaser.range + scans->rightLaser.range - scans->leftLaser.offsets.x + scans->rightLaser.offsets.x)/2;
+    Position xy(Rotated(Position(x * c, -Rotated(wall.start, wall.angle).x), angle));
+    Position dists(Rotated(Position(scans->leftLaser.range + scans->leftLaser.offsets.x,
+                                    scans->frontLaser.range + scans->frontLaser.offsets.y), angle));
+    WriteYAMLMap(xy.x, xy.y, dists.x, dists.y);
+    WriteMap();
+}
+
+void Navigator::CalibrateRectangleMap(string wallId)
+{
+    Segment wall = map[wallId];
+    float angle = - wall.angle + M_PI_2;
+    float c = cos(scans->yaw);
+    float x = (scans->leftLaser.range + scans->rightLaser.range - scans->leftLaser.offsets.x + scans->rightLaser.offsets.x)/2;
+    float y = (scans->frontLaser.range + scans->backLaser.range - scans->backLaser.offsets.y + scans->frontLaser.offsets.y)/2;
+    Position xy(Rotated(Position(x * c, y * c), angle));
+    Position dists(Rotated(Position(scans->leftLaser.range + scans->leftLaser.offsets.x,
+                                    scans->frontLaser.range + scans->frontLaser.offsets.y), angle));
+    WriteYAMLMap(xy.x, xy.y, dists.x, dists.y);
+    WriteMap();
 }

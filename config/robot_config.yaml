@@ -1,0 +1,15 @@
+left:
+  offsets: [-0.25, 0.14]
+  is_on: true
+
+right:
+  offsets: [0.25, 0.14]
+  is_on: true
+
+front:
+  offsets: [0.20, 0.19]
+  is_on: true
+
+back:
+  offsets: [0, -0.19]
+  is_on: true

@@ -1,0 +1,18 @@
+lines:
+  line1:
+    start: [-5, -5]
+    end: [-5, 5]
+    angle: 0
+  line2:
+    start: [-5, 5]
+    end: [5, 5]
+    angle: 4.71239
+  line3:
+    start: [5, 5]
+    end: [5, -5]
+    angle: 3.14159
+  line4:
+    start: [5, -5]
+    end: [-5, -5]
+    angle: 1.5708
+initial_pose: [-4, 3]

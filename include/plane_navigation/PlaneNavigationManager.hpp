@@ -16,12 +16,7 @@ class PlaneNavigationManager
 		static std::mutex				mutex_;
 		Navigator* 						nav_;
 		SensorScans*					scans_;
-		Pose 							lastPose_;
 		std::vector<float>				estimatedPose_;
-		// std::vector<int> adressList_;
-		// std::vector<uint16_t> rangeList_;
-		// char * sensorDataBuf_;
-
 
 	protected:
 		PlaneNavigationManager(/* args */);
