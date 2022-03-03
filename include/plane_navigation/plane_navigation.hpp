@@ -5,8 +5,8 @@
 #include <map>
 #include <cmath>
 #include <limits>
-#include <thread>
 #include "Segment.hpp"
+#include "Filters.hpp"
 #include <fstream>
 using string = std::string;
 
@@ -34,13 +34,13 @@ private:
     void RotateMap(float angle);
     void WriteMap();
     void WriteYAMLMap();
+    void CreateRectangleMap(float wallAngle, float halfWidth, float halfLength);
 
 public:
-    bool isUpdate;
     Navigator(string configPath, SensorScans *scans);
     ~Navigator();
-    void CalibrateRectangleMap(string frontWall);
-    void CalibrateHall(string frontWall);
+    void CalibrateWidthLength(float wallAngle);
+    void CalibrateWidth(string wallId);
     void CalculatePosesByFrontWall(float axisDir, float wallAngle, string frontWallId,
                                           LaserData rotatedLeft, LaserData rotatedFront, float roll, float pitch);
     void CalculatePosesByAngleWall(float axisDir, float wallAngle, LaserData rotatedLeft, LaserData rotatedFront, float roll, float pitch);

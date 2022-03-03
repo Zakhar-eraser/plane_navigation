@@ -49,7 +49,6 @@ Navigator::Navigator(string configPath, SensorScans *scans)
     lastPoses.reserve(4);
     this->configPath = configPath;
     this->scans = scans;
-    //isUpdate = false;
     WriteMap();
 }
 
@@ -249,29 +248,38 @@ void Navigator::WriteYAMLMap()
     mapFile.close();
 }
 
-void Navigator::CalibrateHall(string frontWall)
+void Navigator::CreateRectangleMap(float wallAngle, float halfWidth, float halfLength)
 {
-    Segment wall = map[frontWall];
-    float angle = - wall.angle + M_PI_2;
+    wallAngle += M_PI_2;
     float c = cos(scans->yaw);
-    float x = (scans->leftLaser.range + scans->rightLaser.range - scans->leftLaser.offsets.x + scans->rightLaser.offsets.x)/2;
-    Position xy(Rotated(Position(x * c, -Rotated(wall.start, wall.angle).x), angle));
-    Position dists(Rotated(Position(scans->leftLaser.range + scans->leftLaser.offsets.x,
-                                    scans->frontLaser.range + scans->frontLaser.offsets.y), angle));
-    WriteYAMLMap(xy.x, xy.y, dists.x, dists.y);
-    WriteMap();
+    Position initPos(halfWidth - (scans->rightLaser.range + scans->rightLaser.offsets.x) * c,
+                     halfLength - (scans->frontLaser.offsets.y + scans->frontLaser.range) * c);
+    lastPose.position = Rotated(initPos, -wallAngle);
+    map.clear();
+    map["line1"] = Segment(Position(-halfWidth, -halfLength), Position(-halfWidth, halfLength), 0);
+    map["line2"] = Segment(Position(-halfWidth, halfLength), Position(halfWidth, halfLength), - M_PI_2);
+    map["line3"] = Segment(Position(halfWidth, halfLength), Position(halfWidth, -halfLength), M_PI);
+    map["line4"] = Segment(Position(halfWidth, -halfLength), Position(-halfWidth, -halfLength), M_PI_2);
+    RotateMap(-wallAngle);
+    map = transformedMap;
+    WriteYAMLMap();
 }
 
-void Navigator::CalibrateRectangleMap(string wallId)
+void Navigator::CalibrateWidthLength(float wallAngle)
 {
-    Segment wall = map[wallId];
-    float angle = - wall.angle + M_PI_2;
     float c = cos(scans->yaw);
-    float x = (scans->leftLaser.range + scans->rightLaser.range - scans->leftLaser.offsets.x + scans->rightLaser.offsets.x)/2;
-    float y = (scans->frontLaser.range + scans->backLaser.range - scans->backLaser.offsets.y + scans->frontLaser.offsets.y)/2;
-    Position xy(Rotated(Position(x * c, y * c), angle));
-    Position dists(Rotated(Position(scans->leftLaser.range + scans->leftLaser.offsets.x,
-                                    scans->frontLaser.range + scans->frontLaser.offsets.y), angle));
-    WriteYAMLMap(xy.x, xy.y, dists.x, dists.y);
-    WriteMap();
+    float width = (-scans->leftLaser.offsets.x + scans->leftLaser.range +
+                    scans->rightLaser.offsets.x + scans->rightLaser.range) * c;
+    float length = (-scans->backLaser.offsets.y + scans->backLaser.range +
+                    scans->frontLaser.offsets.y + scans->frontLaser.range) * c;
+    CreateRectangleMap(wallAngle, width / 2, length / 2);
+}
+
+void Navigator::CalibrateWidth(string wallId)
+{
+    Segment &wall = map[wallId];
+    float halfLength = - Rotated(wall.start, wall.angle).x;
+    float width = (-scans->leftLaser.offsets.x + scans->leftLaser.range +
+                    scans->rightLaser.offsets.x + scans->rightLaser.range) * cos(scans->yaw);
+    CreateRectangleMap(wall.angle, width / 2, halfLength);
 }

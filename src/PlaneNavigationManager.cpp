@@ -13,6 +13,11 @@ PlaneNavigationManager *PlaneNavigationManager::GetInstance()
     return instance_;
 }
 
+PlaneNavigationManager::PlaneNavigationManager()
+{
+	ranges = std::vector<std::vector<float>>(4, std::vector<float>(set));
+}
+
 std::vector<float> PlaneNavigationManager::getEstimatedPose()
 {
 	return estimatedPose_;
@@ -20,10 +25,21 @@ std::vector<float> PlaneNavigationManager::getEstimatedPose()
 
 void PlaneNavigationManager::setRange(float right, float left, float front, float back)
 {
-	scans_->frontLaser.range = front;
-	scans_->leftLaser.range = left;
-	scans_->backLaser.range = back;
-	scans_->rightLaser.range = right;
+	if(counter < set && calibration)
+	{
+		ranges[0][counter] = right;
+		ranges[1][counter] = left;
+		ranges[2][counter] = front;
+		ranges[3][counter] = back;
+		counter++;
+	}
+	else
+	{
+		scans_->frontLaser.range = front;
+		scans_->leftLaser.range = left;
+		scans_->backLaser.range = back;
+		scans_->rightLaser.range = right;
+	}
 }
 
 void PlaneNavigationManager::setOrientation(float yaw, float pitch, float roll)
@@ -35,7 +51,6 @@ void PlaneNavigationManager::setOrientation(float yaw, float pitch, float roll)
 
 void PlaneNavigationManager::updatePose()
 {
-	nav_->isUpdate = true;
 	nav_->CalculatePose();
 	Pose lastPose = nav_->GetPose();
 	estimatedPose_[0] = lastPose.position.x;
@@ -43,6 +58,26 @@ void PlaneNavigationManager::updatePose()
 	estimatedPose_[2] = lastPose.angle;
 }
 
+bool PlaneNavigationManager::calibrateRectMap()
+{
+	if(!calibration) calibration = true;
+	if(counter == set)
+	{
+		counter = 0;
+		std::sort(ranges[0].begin(), ranges[0].end());
+		std::sort(ranges[1].begin(), ranges[1].end());
+		std::sort(ranges[2].begin(), ranges[2].end());
+		std::sort(ranges[3].begin(), ranges[3].end());
+		scans_->rightLaser.range = ranges[0][center];
+		scans_->leftLaser.range = ranges[1][center];
+		scans_->frontLaser.range = ranges[2][center];
+		scans_->backLaser.range = ranges[3][center];
+		nav_->CalibrateWidth("line2");
+		calibration = false;
+		return true;
+	}
+	else return false;
+}
 
 PlaneNavigationManager::PlaneNavigationManager(/* args */)
 {
