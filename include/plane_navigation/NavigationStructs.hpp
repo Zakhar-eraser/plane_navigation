@@ -2,6 +2,7 @@
 #define NAV_STRUCTS
 
 #include <utility>
+#include <sensor_msgs/LaserScan.h>
 using pair = std::pair<float, float>;
 
 struct Position
@@ -38,12 +39,19 @@ struct LaserData
     LaserData(float range, Position offsets, bool isOn);
 };
 
+struct LidarData
+{
+    Position offsets;
+    sensor_msgs::LaserScanPtr data;
+};
+
 struct SensorScans
 {
     LaserData leftLaser;
     LaserData rightLaser;
     LaserData frontLaser;
     LaserData backLaser;
+    LidarData lidar;
     float yaw = 0.0f;
     float pitch = 0.0f;
     float roll = 0.0f;

@@ -3,6 +3,7 @@ project(plane_navigation)
 
 file(GLOB catkin_LIBRARIES
      "/opt/ros/noetic/lib/*.so"
+     "/opt/ros/melodic/lib/*.so"
 )
 
 include_directories(

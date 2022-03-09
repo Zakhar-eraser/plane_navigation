@@ -189,7 +189,7 @@ void Navigator::CalculatePoseByLaserPair(float axisDir, unsigned int pair,
     }
 }
 
-void Navigator::CalculatePose()
+void Navigator::CalculatePoseByRangefinders()
 {
     poses.clear();
     CalculatePoseByLaserPair(0, LEFT_FRONT, scans->roll, scans->pitch,
@@ -206,6 +206,24 @@ void Navigator::CalculatePose()
     for(auto &pose : poses)
     {
         lastPoses[pose.first] = pose.second;
+    }
+}
+
+void Navigator::CalculatePoseByLidar()
+{
+    std::vector<float> &ranges = scans->lidar.data->ranges;
+    int size = ranges.size();
+    float angleStep = scans->lidar.data->angle_increment;
+    int step = int(M_PI_2 / angleStep);
+    poses.clear();
+    for(int i = 0; i < size; i++)
+    {
+        int j = i - step;
+        if(j < 0) j += size;
+        if(!(std::isnan(ranges[i]) | std::isnan(ranges[j])))
+        {
+            CalculatePoseByLaserPair(i * angleStep, 0);
+        }
     }
 }
 

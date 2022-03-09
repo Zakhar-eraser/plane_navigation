@@ -45,8 +45,9 @@ public:
                                           LaserData rotatedLeft, LaserData rotatedFront, float roll, float pitch);
     void CalculatePosesByAngleWall(float axisDir, float wallAngle, LaserData rotatedLeft, LaserData rotatedFront, float roll, float pitch);
     void CalculatePoseByLaserPair(float axisDir, unsigned int pair, float roll, float pitch, LaserData left, LaserData front);
+    void CalculatePoseByLidar();
     void StartNavigator();
-    void CalculatePose();
+    void CalculatePoseByRangefinders();
     void SetLastPose(Pose pose);
     Pose GetPose();
 };
