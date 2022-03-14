@@ -4,7 +4,7 @@
   <version>0.0.0</version>
   <description>The plane_navigation package</description>
 
-  <maintainer email="79922187361@yandex.ru">Zakhar Anikin</maintainer>
+  <maintainer email="79661546312@yandex.ru">Zakhar Anikin</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>catkin</buildtool_depend>
