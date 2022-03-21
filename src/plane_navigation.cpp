@@ -211,20 +211,20 @@ void Navigator::CalculatePoseByRangefinders()
 
 void Navigator::CalculatePoseByLidar()
 {
-    std::vector<float> &ranges = scans->lidar.data->ranges;
-    int size = ranges.size();
-    float angleStep = scans->lidar.data->angle_increment;
-    int step = int(M_PI_2 / angleStep);
-    poses.clear();
-    for(int i = 0; i < size; i++)
-    {
-        int j = i - step;
-        if(j < 0) j += size;
-        if(!(std::isnan(ranges[i]) | std::isnan(ranges[j])))
-        {
-            CalculatePoseByLaserPair(i * angleStep, 0);
-        }
-    }
+//    std::vector<float> &ranges = scans->lidar.data->ranges;
+//    int size = ranges.size();
+//    float angleStep = scans->lidar.data->angle_increment;
+//    int step = int(M_PI_2 / angleStep);
+//    poses.clear();
+//    for(int i = 0; i < size; i++)
+//    {
+//        int j = i - step;
+//        if(j < 0) j += size;
+//        if(!(std::isnan(ranges[i]) | std::isnan(ranges[j])))
+//        {
+//            CalculatePoseByLaserPair(i * angleStep, 0);
+//        }
+//    }
 }
 
 Pose Navigator::GetMeanPosition()

@@ -17,6 +17,7 @@ add_library(navigation
   src/NavigationStructs.cpp
   src/PlaneNavigationManager.cpp
   src/Filters.cpp
+  src/Mapper.cpp
 )
 target_link_libraries (navigation yaml-cpp)
 

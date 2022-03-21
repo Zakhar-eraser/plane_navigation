@@ -51,7 +51,7 @@ void PlaneNavigationManager::setOrientation(float yaw, float pitch, float roll)
 
 void PlaneNavigationManager::updatePose()
 {
-	nav_->CalculatePose();
+	nav_->CalculatePoseByRangefinders();
 	Pose lastPose = nav_->GetPose();
 	estimatedPose_[0] = lastPose.position.x;
 	estimatedPose_[1] = lastPose.position.y;
