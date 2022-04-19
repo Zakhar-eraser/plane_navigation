@@ -99,10 +99,10 @@ int main(int argc, char **argv)
             //nav->isUpdate = true;
             if(!calibrated)
             {
-                nav->CalibrateRectangleMap();
+                nav->CalibrateWidthLength(M_PI_2);
                 calibrated = true;
             }
-            nav->CalculatePose();
+            nav->CalculatePoseByRangefinders();
             lastPose = nav->GetPose();
             data.header.stamp = ros::Time::now();
             data.pose.position.x = lastPose.position.x;

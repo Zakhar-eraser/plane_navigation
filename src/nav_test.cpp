@@ -30,7 +30,7 @@ int main()
 
     scans->yaw = params["yaw"].as<float>();
 
-    nav.CalculatePose();
+    nav.CalculatePoseByRangefinders();
     Pose pose = nav.GetPose();
     std::cout << "X: " << pose.position.x << std::endl;
     std::cout << "Y: " << pose.position.y << std::endl;

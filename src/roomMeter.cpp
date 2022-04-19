@@ -76,8 +76,8 @@ int main(int argc, char **argv)
     emitter << YAML::Key << "angle" << YAML::Value << 1.5708f << YAML::EndMap;
     emitter << YAML::EndMap;
     emitter << YAML::Key << "initial_pose" << YAML::Value;
-    emitter << YAML::Flow << YAML::BeginSeq << -x + scans->leftLaser.range + scans->leftLaser.offsets.x <<
-                                               -y + scans->frontLaser.range + scans->frontLaser.offsets.y << YAML::EndSeq;
+    emitter << YAML::Flow << YAML::BeginSeq << -x + left + leftOs.first <<
+                                               -y + front + frontOs.second << YAML::EndSeq;
     emitter << YAML::EndMap;
     mapFile.close();
     return 0;

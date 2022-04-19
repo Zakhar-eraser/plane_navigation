@@ -13,11 +13,6 @@ PlaneNavigationManager *PlaneNavigationManager::GetInstance()
     return instance_;
 }
 
-PlaneNavigationManager::PlaneNavigationManager()
-{
-	ranges = std::vector<std::vector<float>>(4, std::vector<float>(set));
-}
-
 std::vector<float> PlaneNavigationManager::getEstimatedPose()
 {
 	return estimatedPose_;
@@ -72,7 +67,7 @@ bool PlaneNavigationManager::calibrateRectMap()
 		scans_->leftLaser.range = ranges[1][center];
 		scans_->frontLaser.range = ranges[2][center];
 		scans_->backLaser.range = ranges[3][center];
-		nav_->CalibrateWidth("line2");
+		nav_->CalibrateWidthLength(M_PI_2);
 		calibration = false;
 		return true;
 	}
@@ -81,6 +76,7 @@ bool PlaneNavigationManager::calibrateRectMap()
 
 PlaneNavigationManager::PlaneNavigationManager(/* args */)
 {
+	ranges = std::vector<std::vector<float>>(4, std::vector<float>(set));
 	scans_ = new SensorScans();
 	YAML::Node robotConfig = YAML::LoadFile("../plane_navigation/config/robot_config.yaml");
 	YAML::Node leftConfig = robotConfig["left"];

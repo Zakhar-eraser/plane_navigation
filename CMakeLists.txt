@@ -8,7 +8,9 @@ file(GLOB catkin_LIBRARIES
 
 include_directories(
   include/${PROJECT_NAME}
+  ${catkin_INCLUDE_DIRS}
   /opt/ros/noetic/include
+  ../RangefinderManager/src
 )
 
 add_library(navigation
